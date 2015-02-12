@@ -60,9 +60,9 @@ end
 	TimeStampMatrix = create_TimeStampMatrix_from_textdata(textdata);
 	
 
-% throw away all the data except for 8640 epochs if restrict is set to 1
+% throw away all the data except for 8640 epochs starting at 10:00 AM if restrict is set to 1
 if restrict
-	tenAMlocs = find(TimeStampMatrix(4,:)==10 & TimeStampMatrix(5,:)==0 & TimeStampMatrix(6,:)==0); %10:00, 10:00AM
+	tenAMlocs = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==0 & [TimeStampMatrix(:).Second]==0); %10:00, 10:00AM
 	data = data(tenAMlocs(1):tenAMlocs(1)+8640,:);
 	textdata = textdata(tenAMlocs(1):tenAMlocs(1)+8640,:);
 end
@@ -166,11 +166,11 @@ explained
 if already_scored_by_human
 	% --- use the data from 10AM to 2PM as training data
 	% Find the first instance of 10AM in the data
-	tenAMlocs = find(TimeStampMatrix(4,:)==10 & TimeStampMatrix(5,:)==0 & TimeStampMatrix(6,:)==0); %10:00, 10:00AM
+	tenAMlocs = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==0 & [TimeStampMatrix(:).Second]==0); %10:00, 10:00AM
 	ind_start = tenAMlocs(1);
 
 	% Find first instance of 2PM that comes after the first instance of 10AM
-	twoPMlocs = find(TimeStampMatrix(4,:)==14 & TimeStampMatrix(5,:)==0 & TimeStampMatrix(6,:)==0); %14:00, 2:00PM
+	twoPMlocs = find([TimeStampMatrix(:).Hour]==14 & [TimeStampMatrix(:).Minute]==0 & TimeStampMatrix(:).Second]==0); %14:00, 2:00PM
 	a=find(twoPMlocs>ind_start);    % only keep those that occur after ind_start
 	ind_end = twoPMlocs(a(1));
 	scored_rows = ind_start:ind_end;
