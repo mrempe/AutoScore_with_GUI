@@ -50,7 +50,7 @@ if nargin==5
 end
 
 
-	addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\';  %where importdatafile.m lives and XL.m
+	addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\';  %where importdatafile.m XL.m and create_TimeStampMatrix_from_textdata.m live
 	
 
 
@@ -122,6 +122,18 @@ end
 	%		Theta/delta is the ratio of theta to delta
 	%		Beta/delta is the ratio of beta to delta (here beta is defined as 15-30Hz)
 
+[delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_column]=find_freq_band_columns(filename,'EEG2');
+
+disp(['delta_columns: ' num2str(delta_columns) ' should be 3:5'])
+disp(['theta_columns: ' num2str(theta_columns) ' should be 7:10'])
+disp(['low_beta_columns: ' num2str(low_beta_columns) ' should be 12:21'])
+disp(['high_beta_columns: ' num2str(high_beta_columns) ' should be 32:41'])
+disp(['EMG_column: ' num2str(EMG_column) ' should be 42'])
+
+pause
+
+
+
 	if strcmp(signal,'EEG1')
 	   Feature(:,1) = sum(data(:,3:5),2);	%delta
 	   Feature(:,2) = sum(data(:,7:10),2);	%theta
@@ -170,7 +182,7 @@ if already_scored_by_human
 	ind_start = tenAMlocs(1);
 
 	% Find first instance of 2PM that comes after the first instance of 10AM
-	twoPMlocs = find([TimeStampMatrix(:).Hour]==14 & [TimeStampMatrix(:).Minute]==0 & TimeStampMatrix(:).Second]==0); %14:00, 2:00PM
+	twoPMlocs = find([TimeStampMatrix(:).Hour]==14 & [TimeStampMatrix(:).Minute]==0 & [TimeStampMatrix(:).Second]==0); %14:00, 2:00PM
 	a=find(twoPMlocs>ind_start);    % only keep those that occur after ind_start
 	ind_end = twoPMlocs(a(1));
 	scored_rows = ind_start:ind_end;
