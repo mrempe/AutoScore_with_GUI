@@ -1,6 +1,6 @@
-function [delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_column]=find_freq_band_columns(filename,keyword)
+function [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,keyword)
 %
-% USAGE: [delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_column]=find_freq_band_columns(filename)
+% USAGE: [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename)
 %
 % This function reads in the file "filename" and finds the columns of data that correspond to delta, theta, lowa-beta, high-beta, and EMG
 % using either EEG1 or EEG2
@@ -16,7 +16,7 @@ function [delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_col
 % 		theta = 5-9 Hz
 %		low beta = 10-20 Hz
 %		high beta = 30-40 Hz
-
+%       beta = 15-30 Hz 
 
 
 % Find the columns with EEG1 1-2 Hz and EEG2 1-2 Hz  
@@ -33,7 +33,9 @@ function [delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_col
     fivetosix(i)=~isempty(strfind(HeadChars(i,:),'5-6'));
     eighttonine(i)=~isempty(strfind(HeadChars(i,:),'8-9'));
     tentoeleven(i)=~isempty(strfind(HeadChars(i,:),'10-11'));
+    fifteentosixteen(i)=~isempty(strfind(HeadChars(i,:),'15-16'));
     nineteentotwenty(i)=~isempty(strfind(HeadChars(i,:),'19-20'));
+    twentyninetothirty(i)=~isempty(strfind(HeadChars(i,:),'29-30'));
     thirtytothirtyone(i)=~isempty(strfind(HeadChars(i,:),'30-31'));
     thirtyninetoforty(i)=~isempty(strfind(HeadChars(i,:),'39-40'));
     EMG(i)=~isempty(strfind(HeadChars(i,:),'EMG'));
@@ -59,7 +61,9 @@ end
   EEG1_5to6Hzcolumn = intersect(find(EEG1),find(fivetosix))-2;
   EEG1_8to9Hzcolumn = intersect(find(EEG1),find(eighttonine))-2;
   EEG1_10to11Hzcolumn = intersect(find(EEG1),find(tentoeleven))-2;
+  EEG1_15to16Hzcolumn = intersect(find(EEG1),find(fifteentosixteen))-2;
   EEG1_19to20Hzcolumn = intersect(find(EEG1),find(nineteentotwenty))-2;
+  EEG1_29to30Hzcolumn = intersect(find(EEG1),find(twentyninetothirty))-2;
   EEG1_30to31Hzcolumn = intersect(find(EEG1),find(thirtytothirtyone))-2;
   EEG1_39to40Hzcolumn = intersect(find(EEG1),find(thirtyninetoforty))-2;
 
@@ -69,16 +73,20 @@ end
   EEG2_5to6Hzcolumn = intersect(find(EEG2),find(fivetosix))-2;
   EEG2_8to9Hzcolumn = intersect(find(EEG2),find(eighttonine))-2;
   EEG2_10to11Hzcolumn = intersect(find(EEG2),find(tentoeleven))-2;
+  EEG2_15to16Hzcolumn = intersect(find(EEG2),find(fifteentosixteen))-2;
   EEG2_19to20Hzcolumn = intersect(find(EEG2),find(nineteentotwenty))-2;
+  EEG2_29to30Hzcolumn = intersect(find(EEG2),find(twentyninetothirty))-2;
   EEG2_30to31Hzcolumn = intersect(find(EEG2),find(thirtytothirtyone))-2;
   EEG2_39to40Hzcolumn = intersect(find(EEG2),find(thirtyninetoforty))-2;
 
 % error checking
-names={'EEG1_1to2Hzcolumn' 'EEG1_3to4Hzcolumn' 'EEG1_5to6Hzcolumn' 'EEG1_8to9Hzcolumn' 'EEG1_10to11Hzcolumn' 'EEG1_19to20Hzcolumn' 'EEG1_30to31Hzcolumn' ...
- 'EEG1_39to40Hzcolumn' 'EEG2_1to2Hzcolumn' 'EEG2_3to4Hzcolumn' 'EEG2_5to6Hzcolumn' 'EEG2_8to9Hzcolumn' 'EEG2_10to11Hzcolumn' 'EEG2_19to20Hzcolumn' 'EEG2_30to31Hzcolumn' ...
+names={'EEG1_1to2Hzcolumn' 'EEG1_3to4Hzcolumn' 'EEG1_5to6Hzcolumn' 'EEG1_8to9Hzcolumn' 'EEG1_10to11Hzcolumn' 'EEG1_15to16Hzcolumn' 'EEG1_19to20Hzcolumn' ...
+'EEG1_29to30Hzcolumn' 'EEG1_30to31Hzcolumn' 'EEG1_39to40Hzcolumn' 'EEG2_1to2Hzcolumn' 'EEG2_3to4Hzcolumn' 'EEG2_5to6Hzcolumn' 'EEG2_8to9Hzcolumn' ...
+'EEG2_10to11Hzcolumn' 'EEG2_15to16Hzcolumn' 'EEG2_19to20Hzcolumn' 'EEG2_29to30Hzcolumn' 'EEG2_30to31Hzcolumn' ...
  'EEG2_39to40Hzcolumn' };
-values={EEG1_1to2Hzcolumn EEG1_3to4Hzcolumn EEG1_5to6Hzcolumn EEG1_8to9Hzcolumn EEG1_10to11Hzcolumn EEG1_19to20Hzcolumn EEG1_30to31Hzcolumn ...
- EEG1_39to40Hzcolumn EEG2_1to2Hzcolumn EEG2_3to4Hzcolumn EEG2_5to6Hzcolumn EEG2_8to9Hzcolumn EEG2_10to11Hzcolumn EEG2_19to20Hzcolumn EEG2_30to31Hzcolumn ...
+values={EEG1_1to2Hzcolumn EEG1_3to4Hzcolumn EEG1_5to6Hzcolumn EEG1_8to9Hzcolumn EEG1_10to11Hzcolumn EEG1_15to16Hzcolumn EEG1_19to20Hzcolumn ...
+EEG1_29to30Hzcolumn EEG1_30to31Hzcolumn EEG1_39to40Hzcolumn EEG2_1to2Hzcolumn EEG2_3to4Hzcolumn EEG2_5to6Hzcolumn EEG2_8to9Hzcolumn ... 
+EEG2_10to11Hzcolumn EEG2_15to16Hzcolumn EEG2_19to20Hzcolumn EEG2_29to30Hzcolumn EEG2_30to31Hzcolumn ...
  EEG2_39to40Hzcolumn};
 
 for i=1:length(names)
@@ -94,6 +102,7 @@ delta_columns = [EEG1_1to2Hzcolumn:EEG1_3to4Hzcolumn]; % 1-4 Hz
 theta_columns = [EEG1_5to6Hzcolumn:EEG1_8to9Hzcolumn]; % 5-9 Hz
 low_beta_columns = [EEG1_10to11Hzcolumn:EEG1_19to20Hzcolumn]; % 10-20 Hz
 high_beta_columns = [EEG1_30to31Hzcolumn:EEG1_39to40Hzcolumn]; % 30-40 Hz
+beta_columns = [EEG1_15to16Hzcolumn:EEG1_29to30Hzcolumn]; %15-30 Hz
 end
 
 if strcmp(keyword,'EEG2')
@@ -101,6 +110,7 @@ delta_columns = [EEG2_1to2Hzcolumn:EEG2_3to4Hzcolumn]; % 1-4 Hz
 theta_columns = [EEG2_5to6Hzcolumn:EEG2_8to9Hzcolumn]; % 5-9 Hz
 low_beta_columns = [EEG2_10to11Hzcolumn:EEG2_19to20Hzcolumn]; % 10-20 Hz
 high_beta_columns = [EEG2_30to31Hzcolumn:EEG2_39to40Hzcolumn]; % 30-40 Hz
+beta_columns = [EEG2_15to16Hzcolumn:EEG2_29to30Hzcolumn]; %15-30 Hz
 end
 
 

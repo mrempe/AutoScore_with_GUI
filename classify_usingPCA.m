@@ -122,7 +122,7 @@ end
 	%		Theta/delta is the ratio of theta to delta
 	%		Beta/delta is the ratio of beta to delta (here beta is defined as 15-30Hz)
 
-[delta_columns,theta_columns,low_beta_columns,high_beta_columns,EMG_column]=find_freq_band_columns(filename,'EEG2');
+[delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,signal);
 
 disp(['delta_columns: ' num2str(delta_columns) ' should be 3:5'])
 disp(['theta_columns: ' num2str(theta_columns) ' should be 7:10'])
@@ -132,28 +132,38 @@ disp(['EMG_column: ' num2str(EMG_column) ' should be 42'])
 
 pause
 
-
-
-	if strcmp(signal,'EEG1')
-	   Feature(:,1) = sum(data(:,3:5),2);	%delta
-	   Feature(:,2) = sum(data(:,7:10),2);	%theta
-	   Feature(:,3) = sum(data(:,12:21),2);	%low beta
-	   Feature(:,4) = sum(data(:,32:41),2);	%high beta
-	   Feature(:,5) = data(:,end);				%EMG
+	   Feature(:,1) = sum(data(:,delta_columns),2);	%delta
+	   Feature(:,2) = sum(data(:,theta_columns),2);	%theta
+	   Feature(:,3) = sum(data(:,low_beta_columns),2);	%low beta
+	   Feature(:,4) = sum(data(:,high_beta_columns),2);	%high beta
+	   Feature(:,5) = data(:,EMG_column);				%EMG
 	   Feature(:,6) = Feature(:,2)./Feature(:,1);
-	   Feature(:,7) = sum(data(:,17:31),2)./Feature(:,1);
-	end 
+	   Feature(:,7) = sum(data(:,beta_columns),2)./Feature(:,1);
+	
 
 
-	if strcmp(signal,'EEG2')  
-       Feature(:,1) = sum(data(:,43:45),2);	%delta
-	   Feature(:,2) = sum(data(:,47:50),2);	%theta
-	   Feature(:,3) = sum(data(:,52:61),2);	%low beta
-	   Feature(:,4) = sum(data(:,72:81),2);	%high beta
-	   Feature(:,5) = data(:,end);				%EMG
-	   Feature(:,6) = Feature(:,2)./Feature(:,1);
-	   Feature(:,7) = sum(data(:,57:71),2)./Feature(:,1);
-	end
+
+
+	% if strcmp(signal,'EEG1')
+	%    Feature(:,1) = sum(data(:,3:5),2);	%delta
+	%    Feature(:,2) = sum(data(:,7:10),2);	%theta
+	%    Feature(:,3) = sum(data(:,12:21),2);	%low beta
+	%    Feature(:,4) = sum(data(:,32:41),2);	%high beta
+	%    Feature(:,5) = data(:,end);				%EMG
+	%    Feature(:,6) = Feature(:,2)./Feature(:,1);
+	%    Feature(:,7) = sum(data(:,17:31),2)./Feature(:,1);
+	% end 
+
+
+	% if strcmp(signal,'EEG2')  
+ %       Feature(:,1) = sum(data(:,43:45),2);	%delta
+	%    Feature(:,2) = sum(data(:,47:50),2);	%theta
+	%    Feature(:,3) = sum(data(:,52:61),2);	%low beta
+	%    Feature(:,4) = sum(data(:,72:81),2);	%high beta
+	%    Feature(:,5) = data(:,end);				%EMG
+	%    Feature(:,6) = Feature(:,2)./Feature(:,1);
+	%    Feature(:,7) = sum(data(:,57:71),2)./Feature(:,1);
+	% end
 
 
 % compute dynamic range
