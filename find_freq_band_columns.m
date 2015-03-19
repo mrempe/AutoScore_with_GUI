@@ -39,6 +39,7 @@ function [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_co
     thirtytothirtyone(i)=~isempty(strfind(HeadChars(i,:),'30-31'));
     thirtyninetoforty(i)=~isempty(strfind(HeadChars(i,:),'39-40'));
     EMG(i)=~isempty(strfind(HeadChars(i,:),'EMG'));
+    PeakToPeak(i)=~isempty(strfind(HeadChars(i,:),'Peak to Peak'));
   end
   
 % handle the case where EEG1 and EEG2 are used instead of EEG 1 and EEG 2
@@ -113,6 +114,10 @@ high_beta_columns = [EEG2_30to31Hzcolumn:EEG2_39to40Hzcolumn]; % 30-40 Hz
 beta_columns = [EEG2_15to16Hzcolumn:EEG2_29to30Hzcolumn]; %15-30 Hz
 end
 
+if length(find(EMG)) > 1
+  EMG_column = intersect(find(EMG),find(PeakToPeak))-2;
+else
+  EMG_column = find(EMG)-2;
+end
 
-EMG_column = find(EMG)-2;
 
