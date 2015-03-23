@@ -121,16 +121,11 @@ end
 	%		high beta = 30-40 Hz
 	%		Theta/delta is the ratio of theta to delta
 	%		Beta/delta is the ratio of beta to delta (here beta is defined as 15-30Hz)
+filename
+signal
 
 [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,signal);
 
-disp(['delta_columns: ' num2str(delta_columns) ' should be 3:5'])
-disp(['theta_columns: ' num2str(theta_columns) ' should be 7:10'])
-disp(['low_beta_columns: ' num2str(low_beta_columns) ' should be 12:21'])
-disp(['high_beta_columns: ' num2str(high_beta_columns) ' should be 32:41'])
-disp(['EMG_column: ' num2str(EMG_column) ' should be 42'])
-
-pause
 
 	   Feature(:,1) = sum(data(:,delta_columns),2);	%delta
 	   Feature(:,2) = sum(data(:,theta_columns),2);	%theta
@@ -254,20 +249,40 @@ end
 % Compare human-scored vs computer scored
 figure
 subplot(1,2,1)
-gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0],'osd');
+% grouping
+wake_locs_human = find(SleepState==0);
+SWS_locs_human  = find(SleepState==1);
+REM_locs_human  = find(SleepState==2);
+wake_scatter_human = transparentScatter(PCAvectors(wake_locs_human,1),PCAvectors(wake_locs_human,2),0.01,0.05);
+set(wake_scatter_human,'FaceColor',[1,0,0]);
+SWS_scatter_human = transparentScatter(PCAvectors(SWS_locs_human,1),PCAvectors(SWS_locs_human,2),0.01,0.05);
+set(SWS_scatter_human,'FaceColor',[0,0,1]);
+REM_scatter_human = transparentScatter(PCAvectors(REM_locs_human,1),PCAvectors(REM_locs_human,2),0.01,0.05);
+set(REM_scatter_human,'FaceColor',[1,0.5,0]);
+%gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0],'osd');
+%scatterhist(PCAvectors(:,1),PCAvectors(:,2),'Group',SleepState,'Color','rbk')
 xlabel('PC1')
 ylabel('PC2')
 a = find(filename=='\');
 title(['Human-scored data for file ', filename(a(end)+1:end)])
 legend('Wake','SWS','REMS')
 
-subplot(1,2,2)
-gscatter(PCAvectors(:,1),PCAvectors(:,2),predicted_sleep_state,[1 0 0; 0 0 1; 1 .5 0],'osd');
-xlabel('PC1')
-ylabel('PC2')
-a = find(filename=='\');
-title(['Computer-scored data for file ', filename(a(end)+1:end)])
-legend('Wake','SWS','REMS')
+ subplot(1,2,2)
+wake_locs_machine = find(predicted_sleep_state==0);
+SWS_locs_machine  = find(predicted_sleep_state==1);
+REM_locs_machine  = find(predicted_sleep_state==2);
+wake_scatter_machine = transparentScatter(PCAvectors(wake_locs_machine,1),PCAvectors(wake_locs_machine,2),0.01,0.05);
+set(wake_scatter_machine,'FaceColor',[1,0,0]);
+SWS_scatter_machine = transparentScatter(PCAvectors(SWS_locs_machine,1),PCAvectors(SWS_locs_machine,2),0.01,0.05);
+set(SWS_scatter_machine,'FaceColor',[0,0,1]);
+REM_scatter_machine = transparentScatter(PCAvectors(REM_locs_machine,1),PCAvectors(REM_locs_machine,2),0.01,0.05);
+set(REM_scatter_machine,'FaceColor',[1,0.5,0]);
+% gscatter(PCAvectors(:,1),PCAvectors(:,2),predicted_sleep_state,[1 0 0; 0 0 1; 1 .5 0],'osd');
+% xlabel('PC1')
+% ylabel('PC2')
+% a = find(filename=='\');
+ title(['Computer-scored data for file ', filename(a(end)+1:end)])
+ legend('Wake','SWS','REMS')
 
 % figure(71)
 % hold on 

@@ -54,6 +54,16 @@ if isempty(find(EEG2))
 		 EEG2(i)=~isempty(strfind(HeadChars(i,:),'EEG2'));
 	end
 end
+  
+% Handle the case where only 1 channel exists. (no EEG1 or EEG2, just EEG)
+if isempty(find(EEG1)) & isempty(find(EEG2))
+disp('Warning: This file only has one channel. So EEG1 and EEG2 will contain the same data')
+for i=1:length(HeadChars)
+      EEG1(i)=~isempty(strfind(HeadChars(i,:),'EEG'));
+      EEG2(i)=~isempty(strfind(HeadChars(i,:),'EEG'));
+  end
+end
+
   fclose('all');   %close all the files
 
 

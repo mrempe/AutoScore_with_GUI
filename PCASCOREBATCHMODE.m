@@ -26,7 +26,7 @@ if ~iscell(files), files = {files}; end
 
 prompt1 = {'Do you want to use EEG1 or EEG2?'};
 ReturnString1 = inputdlg(prompt1,'Channel Selection',1,{'EEG2'});
-signal = str2double(ReturnString1{1,1});
+signal = ReturnString1{1,1};
 
 prompt2 = {'Has this file already been fully scored by a human? (1 for yes, 0 for no)'};
 ReturnString2 = inputdlg(prompt2,'Already Scored?',1,{'0'});
