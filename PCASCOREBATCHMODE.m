@@ -24,21 +24,35 @@ function agreement_stats=PCASCOREBATCHMODE
 [files,directory] = uigetfile('Multiselect','on','D:\*.txt','Please Select .txt file(s) to autoscore');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
 if ~iscell(files), files = {files}; end
 
-prompt1 = {'Do you want to use EEG1 or EEG2?'};
-ReturnString1 = inputdlg(prompt1,'Channel Selection',1,{'EEG2'});
-signal = ReturnString1{1,1};
+% prompt1 = {'Do you want to use EEG1 or EEG2?'};
+% ReturnString1 = inputdlg(prompt1,'Channel Selection',1,{'EEG2'});
+% signal = ReturnString1{1,1};
 
-prompt2 = {'Has this file already been fully scored by a human? (1 for yes, 0 for no)'};
-ReturnString2 = inputdlg(prompt2,'Already Scored?',1,{'0'});
-already_scored_by_human = str2double(ReturnString2{1,1});
+% prompt2 = {'Has this file already been fully scored by a human? (1 for yes, 0 for no)'};
+% ReturnString2 = inputdlg(prompt2,'Already Scored?',1,{'0'});
+% already_scored_by_human = str2double(ReturnString2{1,1});
 
-prompt3 = {'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)'};
-ReturnString3 = inputdlg(prompt3,'Restrict?',1,{'0'});
-restrict = str2double(ReturnString3{1,1});
+% prompt3 = {'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)'};
+% ReturnString3 = inputdlg(prompt3,'Restrict?',1,{'0'});
+% restrict = str2double(ReturnString3{1,1});
 
-prompt4 = {'Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)'};
-ReturnString4 = inputdlg(prompt4,'Write File(s)?',1,{'1'});
-writefile = str2double(ReturnString4{1,1});
+% prompt4 = {'Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)'};
+% ReturnString4 = inputdlg(prompt4,'Write File(s)?',1,{'1'});
+% writefile = str2double(ReturnString4{1,1});
+
+prompt = {'Do you want to use EEG1 or EEG2?','Has this file already been fully scored by a human? (1 for yes, 0 for no)', ...
+'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)','Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)'};
+defaults = {'EEG2','0','0','1'}; 
+dlg_title = 'Input';
+inputs = inputdlg(prompt,dlg_title,1,defaults);
+
+signal=inputs{1}
+already_scored_by_human = str2double(inputs{2})
+restrict = str2double(inputs{3})
+writefile = str2double(inputs{4})
+
+
+
 % directory_plus_extension=strcat(directory,'*.txt');
 % files=dir(directory_plus_extension);
 % for i=length(files):-1:1                % don't autoscore files that have already been autoscored
