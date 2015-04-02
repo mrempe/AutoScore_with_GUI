@@ -32,7 +32,7 @@ prompt2 = {'Has this file already been fully scored by a human? (1 for yes, 0 fo
 ReturnString2 = inputdlg(prompt2,'Already Scored?',1,{'0'});
 already_scored_by_human = str2double(ReturnString2{1,1});
 
-prompt3 = {'Do you want to restrict the dataset to only 8640 epochs?'};
+prompt3 = {'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)'};
 ReturnString3 = inputdlg(prompt3,'Restrict?',1,{'0'});
 restrict = str2double(ReturnString3{1,1});
 
@@ -59,11 +59,22 @@ end
 
 
 figure
-boxplot([wake_agreement',SWS_agreement',REM_agreement',global_agreement',kappa'],'labels',{'Wake', 'SWS', 'REM', 'Overall', 'Kappa'}, ...
+
+if length(files)==1     % Case where only one file has been autoscored
+	xplot=1:5;
+	yplot=[wake_agreement SWS_agreement REM_agreement global_agreement kappa];
+	plot(xplot,yplot,'.','MarkerSize',15)
+	axis([0.5 5.5 min(yplot)-0.1 1])
+	ax=gca;
+	ax.XTick = [1,2,3,4,5];
+	ax.XTickLabel = {'Wake','SWS','REM','Overall','Kappa'};
+else
+	boxplot([wake_agreement',SWS_agreement',REM_agreement',global_agreement',kappa'],'labels',{'Wake', 'SWS', 'REM', 'Overall', 'Kappa'}, ...
 	'plotstyle','compact','boxstyle','filled','colors','rb');
-ax=gca();
-set(ax,'YGrid','on')
-title(directory)
+	ax=gca();
+end
+	set(ax,'YGrid','on')
+	title(directory)
 
 agreement_stats.wake   = wake_agreement;
 agreement_stats.SWS    = SWS_agreement;
