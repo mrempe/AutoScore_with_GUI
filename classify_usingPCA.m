@@ -66,7 +66,7 @@ epoch_length_in_seconds=etime([2014 2 28 hour_second_time_stamp minute_second_ti
 
 
 
-% throw away all the data except for 8640 epochs starting at 10:00 AM if restrict is set to 1
+% if restrict=1, throw away all the data except for 8640 epochs starting at 10:00 AM if restrict is set to 1
 if restrict
 	tenAMlocs = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==0 & [TimeStampMatrix(:).Second]==0); %10:00, 10:00AM
 	data = data(tenAMlocs(1):tenAMlocs(1)+8640,:);
@@ -150,21 +150,20 @@ end
 
 % Compute the Principal Components
 scalefactor = max(max(Feature))-min(min(Feature));
-[Coeff,PCAvectors,latent,tsquared,explained]=pca((2*(Feature-max(max(Feature))))./scalefactor+1);
+[Coeff,PCAvectors,latent,tsquared,explained] = pca((2*(Feature-max(max(Feature))))./scalefactor+1);
 explained
 
 
 % Determine if the file has been fully scored or not.
 % If it has been fully scored keep only a portion of the scored .txt file
 % and re-score the whole thing using PCA.
-
-if isempty(training_start) || isempty(training_end)   %using all scored epochs as training data
-	scored_rows = find(SleepState ~=8);
-else
-	% find index of start time for training period and call it ind_start
- 	ind_start = training_start*60*60/epoch_length_in_seconds;
-	% find index of end time for training period and call it ind_end
- 	ind_end = training_end*60*60/epoch_length_in_seconds;
+% set up a boolean, fully_scored=1 if the entire recording has been scored by a human, 0 if only a subset has been scored.  
+fully_scored = ~isempty(training_start) && ~isempty(training_end)
+if fully_scored == 0   %using all scored epochs as training data
+	scored_rows = find(SleepState ~=8);               % file has not been fully scored
+else  % it has been fully scored
+	ind_start = training_start*60*60/epoch_length_in_seconds;
+	ind_end   = training_end*60*60/epoch_length_in_seconds;
 	scored_rows = ind_start:ind_end;
 end
 
@@ -337,8 +336,16 @@ end
 
 
 % Compute statistics about agreement 
+if fully_scored
 kappa = compute_kappa(SleepState,predicted_sleep_state);
 [global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState,predicted_sleep_state);
+else
+	kappa = NaN;
+	global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
+	wake_agreement = NaN;
+	SWS_agreement = NaN;
+	REM_agreement = NaN;
+end
 
 predicted_score = predicted_sleep_state;
 

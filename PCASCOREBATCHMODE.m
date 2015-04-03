@@ -77,9 +77,10 @@ clear predicted_score
 end
 
 
-figure
 
-if length(files)==1     % Case where only one file has been autoscored
+
+if length(files)==1 && ~isnan(kappa)    % Case where only one file has been autoscored, and there is a kappa to plot (it has been fully scored by a human)
+	figure
 	xplot=1:5;
 	yplot=[wake_agreement SWS_agreement REM_agreement global_agreement kappa];
 	plot(xplot,yplot,'.','MarkerSize',15)
@@ -87,13 +88,17 @@ if length(files)==1     % Case where only one file has been autoscored
 	ax=gca;
 	ax.XTick = [1,2,3,4,5];
 	ax.XTickLabel = {'Wake','SWS','REM','Overall','Kappa'};
-else
+	set(ax,'YGrid','on')	
+	title(directory)
+elseif length(files) > 1
+	figure
 	boxplot([wake_agreement',SWS_agreement',REM_agreement',global_agreement',kappa'],'labels',{'Wake', 'SWS', 'REM', 'Overall', 'Kappa'}, ...
 	'plotstyle','compact','boxstyle','filled','colors','rb');
 	ax=gca();
-end
 	set(ax,'YGrid','on')
 	title(directory)
+end
+	
 
 agreement_stats.wake   = wake_agreement;
 agreement_stats.SWS    = SWS_agreement;
