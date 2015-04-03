@@ -125,8 +125,7 @@ end
 	%		high beta = 30-40 Hz
 	%		Theta/delta is the ratio of theta to delta
 	%		Beta/delta is the ratio of beta to delta (here beta is defined as 15-30Hz)
-filename
-signal
+
 
 [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,signal);
 
@@ -160,13 +159,12 @@ explained
 % and re-score the whole thing using PCA.
 
 if isempty(training_start) || isempty(training_end)   %using all scored epochs as training data
-	scored_rows = find(SleepState !=8);
+	scored_rows = find(SleepState ~=8);
 else
 	% find index of start time for training period and call it ind_start
  	ind_start = training_start*60*60/epoch_length_in_seconds;
 	% find index of end time for training period and call it ind_end
  	ind_end = training_end*60*60/epoch_length_in_seconds;
-
 	scored_rows = ind_start:ind_end;
 end
 
@@ -258,6 +256,9 @@ ylabel('PC2')
 a = find(filename=='\');
 title(['Human-scored data for file ', filename(a(end)+1:end)])
 legend('Wake','SWS','REMS')
+legend boxoff
+yl1 = ylim;  % ylimits
+xl1 = xlim;  % xlimits
 
  subplot(1,2,2)
 wake_locs_machine = find(predicted_sleep_state==0);
@@ -270,11 +271,19 @@ set(SWS_scatter_machine,'FaceColor',[0,0,1]);
 REM_scatter_machine = transparentScatter(PCAvectors(REM_locs_machine,1),PCAvectors(REM_locs_machine,2),0.01,0.05);
 set(REM_scatter_machine,'FaceColor',[1,0.5,0]);
 % gscatter(PCAvectors(:,1),PCAvectors(:,2),predicted_sleep_state,[1 0 0; 0 0 1; 1 .5 0],'osd');
-% xlabel('PC1')
-% ylabel('PC2')
+xlabel('PC1')
+ylabel('PC2')
 % a = find(filename=='\');
  title(['Computer-scored data for file ', filename(a(end)+1:end)])
  legend('Wake','SWS','REMS')
+ legend boxoff
+yl2 = ylim;  % ylimits
+xl2 = xlim;  % xlimits
+if  ~isequal(xl1,xl2) || ~isequal(yl1,yl2)  % Make the axes equal between the two subplots (they may differ since one is only training data and one is all data)
+	axis([xl1(1) xl1(2) yl1(1) yl1(2)])
+end
+
+
 
 % figure(71)
 % hold on 
