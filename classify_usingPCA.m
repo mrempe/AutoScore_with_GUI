@@ -162,8 +162,9 @@ fully_scored = ~isempty(training_start) && ~isempty(training_end)
 if fully_scored == 0   %using all scored epochs as training data
 	scored_rows = find(SleepState ~=8);               % file has not been fully scored
 else  % it has been fully scored
-	ind_start = training_start*60*60/epoch_length_in_seconds;
-	ind_end   = training_end*60*60/epoch_length_in_seconds;
+	ind_start = round(training_start*60*60/epoch_length_in_seconds);
+	if(ind_start==0) ind_start=1; end
+	ind_end   = round(training_end*60*60/epoch_length_in_seconds);
 	scored_rows = ind_start:ind_end;
 end
 
