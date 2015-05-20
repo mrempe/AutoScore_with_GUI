@@ -9,7 +9,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	% NOTE: this function requires data that contains frequencies up to 40 Hz since one of the features is the power in 
 	% the "high beta" band (30-40 Hz)
 	%
-	% 
+	% NOTE: if only a subset of the original file has been scored by a human, agreement stats (including kappa) are not computed. They are set to NaN.  
 	%
 	% Inputs:
 	%        filename:      name of the .txt file. This can either be partially-scored or fully scored. 
@@ -28,7 +28,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	%
 	%
 
-rescore_REM_in_wake =1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 3 wake epochs will be rescored as wake. 
+rescore_REM_in_wake =1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
                          % Set this to 0 if you have data from narcolepsy, sleep apnea or some other condition where REM 
                          % episodes can happen in the middle of a wake bout.
 
@@ -217,14 +217,16 @@ err
 
 
 
-% if there are REM epochs preceeded by 3 or more contiguous wake epochs
+% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 % re-score the REM epoch as wake
+REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
+epochs_in_REM_window = REM_window_length/epoch_length_in_seconds; 
 if rescore_REM_in_wake
 	REM_locs = find(predicted_sleep_state==2);
-	REM_locs = REM_locs(find(REM_locs>3));  % in case you get an epoch in the first three that is REM
+	REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
 	REM_rescore_counter=0;
 	for i=1:length(REM_locs)
-		if predicted_sleep_state(REM_locs(i)-1)==0 & predicted_sleep_state(REM_locs(i)-2)==0 & predicted_sleep_state(REM_locs(i)-3)==0
+		if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1)==zeros(epochs_in_REM_window,1)
 	       predicted_sleep_state(REM_locs(i)) = 0;  %set that epoch to wake
 	       REM_rescore_counter = REM_rescore_counter+1;
 	   end
