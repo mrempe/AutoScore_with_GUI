@@ -1,0 +1,7 @@
+My notes to self on Autoscoring code: 
+
+* June 15, 2015 
+It would probably be a good idea to have the autoscoring treat artefact as another state.  When there is an artefact, the EEG and EMG are complete junk (and sometimes ones) so that 
+messes up the autoscoring.  It would probably do a better job if it just classified artefacts as artefacts.  Two ways I could do this: 1) leave the artefacts alone and just run 
+the autoscoring on the other epochs that are not artefacts.  or 2) treat artefact as a fourth category in addition to SWS, wake and REM.  
+I'm leaning toward doing option 1.  

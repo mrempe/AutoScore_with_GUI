@@ -64,6 +64,20 @@ for i=1:length(HeadChars)
   end
 end
 
+
+%Handle the case where EEG2 was requested, but only 1 channel exists and it is called EEG1
+if strcmp(keyword,'EEG2') & isempty(find(EEG2))
+  disp('Warning: You requested EEG2, but this file only has EEG1.  Using EEG1 instead.')
+  for i=1:length(HeadChars)
+      EEG1(i)=~isempty(strfind(HeadChars(i,:),'EEG1'));
+      EEG2(i)=~isempty(strfind(HeadChars(i,:),'EEG1'));
+  end
+end
+
+
+
+
+
   fclose('all');   %close all the files
 
 

@@ -334,7 +334,10 @@ end
 % legend('Wake','SWS','REMS')
 
 
-
+% compute agreement stats comparing not to entire file, but only the portion that has been scored by a human
+% CHANGED 5.28.15.  change this back and uncomment the 10 lines below for computing agreement stats
+% kappa = compute_kappa(SleepState(ind_start:ind_end),predicted_sleep_state(ind_start:ind_end));
+% [global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(ind_start:ind_end),predicted_sleep_state(ind_start:ind_end));
 
 
 
@@ -357,3 +360,5 @@ predicted_score = predicted_sleep_state;
 if writefile
 	write_scored_file(filename,predicted_score);
 end
+
+save scatter_data_for_plotly.mat PCAvectors SleepState predicted_sleep_state Feature 
