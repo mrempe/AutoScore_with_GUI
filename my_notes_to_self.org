@@ -1,7 +1,18 @@
 My notes to self on Autoscoring code: 
 
 * June 15, 2015 
-It would probably be a good idea to have the autoscoring treat artefact as another state.  When there is an artefact, the EEG and EMG are complete junk (and sometimes ones) so that 
-messes up the autoscoring.  It would probably do a better job if it just classified artefacts as artefacts.  Two ways I could do this: 1) leave the artefacts alone and just run 
-the autoscoring on the other epochs that are not artefacts.  or 2) treat artefact as a fourth category in addition to SWS, wake and REM.  
+It would probably be a good idea to have the autoscoring treat artefact as another state.  When there is an artefact, the EEG and EMG are complete junk (and sometimes ones) so that messes up the autoscoring.  It would probably do a better job if it just classified artefacts as artefacts.  Two ways I could do this: 1) leave the artefacts alone and just run the autoscoring on the other epochs that are not artefacts.  or 2) treat artefact as a fourth category in addition to SWS, wake and REM.  
 I'm leaning toward doing option 1.  
+
+* June 25, 2015
+12:48 It seems like the classify_usingPCA is now ignoring epochs marked with an X.  I also modified write_scored_file.m to write in an X if the value is a 5 at that 
+location.  It still seems funny that this rat file isn't working well.  The PCA plots look good: the cluster separate out nicely for the different states.  Random Forest 
+works well.  Why is it classifying everything (non-artefact) as wake?  
+
+1:10 I am now outputing the posterior conditional probabilities.  For a good file (like a BA or BL) the numbers are reasonable: each row corresponds to an epoch, 
+and there are 3 columns: probability that that epoch is wake, probability it is SWS, probability it is REMS.  When I output this for the Rat dataset I get 
+NaNs for every element in every row. 
+
+2:00 I've added the ability to draw lines on a PCA plot of the training data.  It works for good data like BA or BL, but for the RAT dataset it doesn't draw any lines and complains.  Keep digging into the myclassify.m to see what is going wrong with the file D:\mrempe\autoscoring_for_Will\Dec2014\Rat10_BL_16-00to22-00.txt 
+
+

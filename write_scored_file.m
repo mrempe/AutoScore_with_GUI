@@ -38,6 +38,8 @@ for i=1:length(predicted_score)
 		sleepstate_vec{i}='S';
 	elseif predicted_score(i)==2
 		sleepstate_vec{i}='R';
+	elseif predicted_score(i)==5
+		sleepstate_vec{i}='X';
 	end
 end
 

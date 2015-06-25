@@ -108,11 +108,12 @@ end
 % end
 	  
 
-% Handle artefacts 
+% Are there epochs marked as artefacts?   
   if length(find(SleepState(:,1)==5)) > 0
     disp(['I found ', num2str(length(find(SleepState(:,1)==5))) ' epochs marked as artefact'])
-    SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
+    %SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
   end 
+  non_artefact_indices = find(SleepState(:,1)~=5);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
 
 
 
@@ -154,19 +155,30 @@ scalefactor = max(max(Feature))-min(min(Feature));
 explained
 
 
+figure
+%gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0; 0 0 0],'osdx');
+
+
+
+
 % Determine if the file has been fully scored or not.
 % If it has been fully scored keep only a portion of the scored .txt file
 % and re-score the whole thing using PCA.
 % set up a boolean, fully_scored=1 if the entire recording has been scored by a human, 0 if only a subset has been scored.  
 fully_scored = ~isempty(training_start) && ~isempty(training_end)
 if fully_scored == 0   %using all scored epochs as training data
-	scored_rows = find(SleepState ~=8);               % file has not been fully scored
+	scored_rows = find(SleepState ~=8 & SleepState ~=5 );               % file has not been fully scored. Exclude artefact epochs. 
+	%scored_rows = find(SleepState ~=8);               
+
 else  % it has been fully scored
 	ind_start = round(training_start*60*60/epoch_length_in_seconds);
 	if(ind_start==0) ind_start=1; end
 	ind_end   = round(training_end*60*60/epoch_length_in_seconds);
 	scored_rows = ind_start:ind_end;
+	scored_rows = scored_rows(find(SleepState(scored_rows)~=5));  % Only use the training data that doesn't have artefacts. 
 end
+
+gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0; 0 0 0],'osdx');
 
 
 
@@ -207,15 +219,24 @@ end
 % end
 
 % Do quadratic discriminant analysis to classify each epoch into wake, SWS, or REM using the PCA vectors
-[predicted_sleep_state,err] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows,1:3),SleepState(scored_rows),'diaglinear','empirical');  % Naive Bayes
+predicted_sleep_state = 11*ones(size(SleepState));
+predicted_sleep_state(find(SleepState==5))=5;
+[predicted_sleep_state(non_artefact_indices),err,posterior,logp,coeff] = myclassify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows,1:3),SleepState(scored_rows),'diaglinear','empirical');  % Naive Bayes
+pause
 err 
+posterior(1:100,:) 
+pause
+%logp
+
+length(find(predicted_sleep_state==5))
+pause
 
 % Or do a random forest
 % B=TreeBagger(500,PCAvectors(scored_rows,1:3),SleepState(scored_rows));  %build 50 bagged decision trees
 % bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
 % predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
 % predicted_sleep_state = str2num(predicted_sleep_state);
-
+% length(find(predicted_sleep_state==5))
 
 
 % if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
@@ -235,8 +256,31 @@ if rescore_REM_in_wake
 	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
 end
 
+figure
+gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0],'osd');
+xl = xlim;
+yl = ylim;
+hold on 
+K = coeff(2,3).const;
+L = coeff(2,3).linear;
+%Q = coeff(1,2).quadratic;
+% Function to compute K + L*v + v'*Q*v for multiple vectors
+% v=[x;y]. Accepts x and y as scalars or column vectors.
+f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+set(h2,'Color','r','LineWidth',2)
 
+K = coeff(1,2).const;
+L = coeff(1,2).linear;
+f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+set(h2,'Color','k','LineWidth',2)
 
+K = coeff(1,3).const;
+L = coeff(1,3).linear;
+f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+set(h2,'Color','b','LineWidth',2)
 
 % Compare human-scored vs computer scored
 figure
@@ -335,7 +379,6 @@ end
 
 
 % compute agreement stats comparing not to entire file, but only the portion that has been scored by a human
-% CHANGED 5.28.15.  change this back and uncomment the 10 lines below for computing agreement stats
 % kappa = compute_kappa(SleepState(ind_start:ind_end),predicted_sleep_state(ind_start:ind_end));
 % [global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(ind_start:ind_end),predicted_sleep_state(ind_start:ind_end));
 
@@ -343,8 +386,8 @@ end
 
 % Compute statistics about agreement 
 if fully_scored
-kappa = compute_kappa(SleepState,predicted_sleep_state);
-[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState,predicted_sleep_state);
+kappa = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
+[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
 else
 	kappa = NaN;
 	global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
