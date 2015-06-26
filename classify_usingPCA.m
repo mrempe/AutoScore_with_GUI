@@ -108,18 +108,12 @@ end
 % end
 	  
 
-% Are there epochs marked as artefacts?   
-  if length(find(SleepState(:,1)==5)) > 0
-    disp(['I found ', num2str(length(find(SleepState(:,1)==5))) ' epochs marked as artefact'])
-    %SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
-  end 
-  non_artefact_indices = find(SleepState(:,1)~=5);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
 
 
 
 
 	% Set up the feature matrix, a la Gilmour etal 2010.
-	% rows are data points, columns are delta	theta	low beta	high beta	EMG	Theta/delta	Beta/delta 
+	% rows are data points, columns are delta	theta	low beta	high beta	EMG		Theta/delta		Beta/delta 
 	% where delta = 1-4 Hz
 	% 		theta = 5-9 Hz
 	%		low beta = 10-20 Hz
@@ -139,21 +133,51 @@ end
 	   Feature(:,6) = Feature(:,2)./Feature(:,1);
 	   Feature(:,7) = sum(data(:,beta_columns),2)./Feature(:,1);
 	
+if sum(sum(isnan(Feature))) ~=0
+	disp('WARNING: Feature vector contains NaNs.  Missing EEG or EMG data.  Ignoring these epochs.')
+	pause(3)  %pause for a few seconds, so the user sees this message
+end
+
+ % Feature will contain NaNs if there is missing EEG or EMG data.  
+ % Find and exclude these epochs. They may occur in the training data or not.
+ % Find each row that contains missing EEG or EMG data and mark it as artefact. Then ignore all artefact rows in autoscoring. 
+[rows,cols]=find(isnan(Feature));
+Nan_rows = unique(rows);
+%non_artefact_non_missing_epochs = setdiff(1:size(Feature,1),Nan_rows);  %non_artefact_non_missing_epochs has numel= length(Feature)-Nan_rows    
+SleepState(Nan_rows)=5;  % Designate epochs with missing data as artefact 
+
+% Also handle the case where all the EEG values are artificially set to 1.  This is clearly an artefact even if it wasn't scored as such
+for i=1:length(data)
+	if data(i,1) ==1 & data(i,2)==1 & data(i,3)==1 & data(i,4)==1 & data(i,5)==1
+		SleepState(i)=5;
+	end
+end
+
+
+
+% Are there epochs marked as artefacts (either scored as artefact or missing EEG or EMG data)?   
+  if length(find(SleepState(:)==5)) > 0
+    disp(['I found ', num2str(length(find(SleepState(:)==5))) ' epochs marked as artefact'])
+    %SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
+  end 
+  non_artefact_indices = find(SleepState(:)~=5);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
+
+
 
 % compute dynamic range
-dynamic_range = max(Feature(:,7))-min(Feature(:,7));
+dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
 
 
 % Smoothing
 for i=1:7
-	Feature(:,i)=medianfiltervectorized(Feature(:,i),2);
+	Feature(non_artefact_indices,i)=medianfiltervectorized(Feature(non_artefact_indices,i),2);
 end
 
 % Compute the Principal Components
-scalefactor = max(max(Feature))-min(min(Feature));
-[Coeff,PCAvectors,latent,tsquared,explained] = pca((2*(Feature-max(max(Feature))))./scalefactor+1);
+scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefact_indices)));
+[Coeff,PCAvectors,latent,tsquared,explained] = pca((2*(Feature)-max(max(Feature)))./scalefactor+1);
 explained
-
+% PCAvectors is indexed just on the non_artefact_non_missing epochs.  Size should be length(Feature)-Nan_rows
 
 figure
 %gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0; 0 0 0],'osdx');
@@ -178,7 +202,7 @@ else  % it has been fully scored
 	scored_rows = scored_rows(find(SleepState(scored_rows)~=5));  % Only use the training data that doesn't have artefacts. 
 end
 
-gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0; 0 0 0],'osdx');
+gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0],'osd');
 
 
 
@@ -221,15 +245,10 @@ gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_r
 % Do quadratic discriminant analysis to classify each epoch into wake, SWS, or REM using the PCA vectors
 predicted_sleep_state = 11*ones(size(SleepState));
 predicted_sleep_state(find(SleepState==5))=5;
-[predicted_sleep_state(non_artefact_indices),err,posterior,logp,coeff] = myclassify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows,1:3),SleepState(scored_rows),'diaglinear','empirical');  % Naive Bayes
-pause
+[predicted_sleep_state(non_artefact_indices),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows,1:3),SleepState(scored_rows),'diaglinear','empirical');  % Naive Bayes
 err 
-posterior(1:100,:) 
-pause
-%logp
+%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
 
-length(find(predicted_sleep_state==5))
-pause
 
 % Or do a random forest
 % B=TreeBagger(500,PCAvectors(scored_rows,1:3),SleepState(scored_rows));  %build 50 bagged decision trees

@@ -15,5 +15,9 @@ NaNs for every element in every row.
 
 2:00 I've added the ability to draw lines on a PCA plot of the training data.  It works for good data like BA or BL, but for the RAT dataset it doesn't draw any lines and complains.  Keep digging into the myclassify.m to see what is going wrong with the file D:\mrempe\autoscoring_for_Will\Dec2014\Rat10_BL_16-00to22-00.txt 
 
-
-4:30 Goi
+* June 26, 2015
+8:56 One idea: compute PCA vectors only on non-artefact data.  This may help, but is seems strange that the PCA plots still look so good. Naive Bayes should still work.  
+I found the problem:  Some of the EMG data were missing.  This meant that the PCA vector had NaNs for those entries which messed up everything in classify.m. I made it so it first 
+checks to see if any data are missing.  If an epoch has any missing data (regardless of whether it is in the training data or not) that epoch will be scored as an artefact and left 
+out of the classifying.  It seems to work well now on the one Rat recording and the excel output looks really good.  All artefact epochs are the same as the human-scored file.  
+Keep testing it on the mouse data. 
