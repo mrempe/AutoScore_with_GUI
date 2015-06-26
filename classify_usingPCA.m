@@ -257,7 +257,7 @@ if rescore_REM_in_wake
 end
 
 figure
-gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0],'osd');
+gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0],'osd');
 xl = xlim;
 yl = ylim;
 hold on 
@@ -389,11 +389,15 @@ if fully_scored
 kappa = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
 [global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
 else
-	kappa = NaN;
-	global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
-	wake_agreement = NaN;
-	SWS_agreement = NaN;
-	REM_agreement = NaN;
+	% compute agreement stats on only those epochs that were scored by hand
+	kappa = compute_kappa(SleepState(scored_rows),predicted_sleep_state(scored_rows));
+	[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(scored_rows),predicted_sleep_state(scored_rows));
+	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
+	% kappa = NaN;
+	% global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
+	% wake_agreement = NaN;
+	% SWS_agreement = NaN;
+	% REM_agreement = NaN;
 end
 
 predicted_score = predicted_sleep_state;

@@ -16,3 +16,4 @@ NaNs for every element in every row.
 2:00 I've added the ability to draw lines on a PCA plot of the training data.  It works for good data like BA or BL, but for the RAT dataset it doesn't draw any lines and complains.  Keep digging into the myclassify.m to see what is going wrong with the file D:\mrempe\autoscoring_for_Will\Dec2014\Rat10_BL_16-00to22-00.txt 
 
 
+4:30 Goi
