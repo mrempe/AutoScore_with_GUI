@@ -1,5 +1,5 @@
-function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,writefile)
-	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,writefile)
+function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,trials,writefile)
+	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,trials,writefile)
 	%
 	%
 	% This function uses a Principal Component Analysis approach to classify the sleep state of each epoch of the file filename. 
@@ -23,6 +23,10 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	%        training_start:   The beginning of the training period, measured in hours from the beginning of the file.
 	%
 	%		 training_end:     The end of the training period, measured in hours from the beginning of the file.   
+	%
+	%		 trials:       a struct containing two fields: number and fraction_training_data.  Run "number" different trials, each time choosing a random "fraction
+	%						_training_data" of the training data as training.  The idea is that by choosing different random subsets of the training data, 
+	%						we may be able to improve performance.  0<fraction_training_data<1  0.05 is usually a good choice.  
 	%
 	%        writefile:     1 if you want to generate a new .txt file, 0 if you don't
 	%
@@ -179,31 +183,46 @@ scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefa
 explained
 % PCAvectors is indexed just on the non_artefact_non_missing epochs.  Size should be length(Feature)-Nan_rows
 
-figure
-%gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0; 0 0 0],'osdx');
-
-
-
 
 % Determine if the file has been fully scored or not.
 % If it has been fully scored keep only a portion of the scored .txt file
 % and re-score the whole thing using PCA.
 % set up a boolean, fully_scored=1 if the entire recording has been scored by a human, 0 if only a subset has been scored.  
-fully_scored = ~isempty(training_start) && ~isempty(training_end)
-if fully_scored == 0   %using all scored epochs as training data
-	scored_rows = find(SleepState ~=8 & SleepState ~=5 );               % file has not been fully scored. Exclude artefact epochs. 
-	%scored_rows = find(SleepState ~=8);               
 
+fully_scored = ~isempty(training_start) && ~isempty(training_end);
+if fully_scored == 0   %using all scored epochs as training data
+	original_scored_rows = find(SleepState ~=8 & SleepState ~=5 );               % file has not been fully scored. Exclude artefact epochs. 
+																				 % original scored rows are those that have been scored by a human.
+																				 % I use 5% of these rows as training data and call them scored_rows
+	
 else  % it has been fully scored
 	ind_start = round(training_start*60*60/epoch_length_in_seconds);
 	if(ind_start==0) ind_start=1; end
 	ind_end   = round(training_end*60*60/epoch_length_in_seconds);
-	scored_rows = ind_start:ind_end;
-	scored_rows = scored_rows(find(SleepState(scored_rows)~=5));  % Only use the training data that doesn't have artefacts. 
+	original_scored_rows = ind_start:ind_end;
+	original_scored_rows = original_scored_rows(find(SleepState(original_scored_rows)~=5));  % Only use the training data that doesn't have artefacts. 
+	original_scored_rows(1)
+	original_scored_rows(end)
+	pause
+	if sum(SleepState(original_scored_rows)==8)>0
+		error('Some of the Epochs you told me to use as training don''t have any scoring in them.  Please run PCASCOREBATCHMODE again and either choose another range or use all scored epochs as training')
+	end
 end
 
-gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0],'osd');
-
+% MULTIPLE TRIALS
+% use a random 5% of the scored epochs as training data
+if trials.number > 1
+	for i=1:trials.number
+		scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); % replace set to false means I won't get a row repeated
+		while length(find(SleepState(scored_rows{i})==2))<10 
+ 			scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); 
+	 	end
+	end	
+elseif trials.number == 1
+	scored_rows{1} = original_scored_rows;
+else
+	error('The number of trials must be greater than or equal to one')
+end
 
 
 % if already_scored_by_human
@@ -243,40 +262,82 @@ gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_r
 % end
 
 % Do quadratic discriminant analysis to classify each epoch into wake, SWS, or REM using the PCA vectors
-predicted_sleep_state = 11*ones(size(SleepState));
-predicted_sleep_state(find(SleepState==5))=5;
-[predicted_sleep_state(non_artefact_indices),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows,1:3),SleepState(scored_rows),'diaglinear','empirical');  % Naive Bayes
-err 
-%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
+for j=1:trials.number
+	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
+	predicted_sleep_state(find(SleepState==5),j)=5;
+
+	[predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	%err 
+
+	%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
 
 
-% Or do a random forest
-% B=TreeBagger(500,PCAvectors(scored_rows,1:3),SleepState(scored_rows));  %build 50 bagged decision trees
-% bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
-% predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
-% predicted_sleep_state = str2num(predicted_sleep_state);
-% length(find(predicted_sleep_state==5))
+
+	% Or do a random forest
+	% B=TreeBagger(500,PCAvectors(scored_rows,1:3),SleepState(scored_rows));  %build 50 bagged decision trees
+	% bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
+	% predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
+	% predicted_sleep_state = str2num(predicted_sleep_state);
+	% length(find(predicted_sleep_state==5))
 
 
-% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
-% re-score the REM epoch as wake
-REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
-epochs_in_REM_window = REM_window_length/epoch_length_in_seconds; 
-if rescore_REM_in_wake
-	REM_locs = find(predicted_sleep_state==2);
-	REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
-	REM_rescore_counter=0;
-	for i=1:length(REM_locs)
-		if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1)==zeros(epochs_in_REM_window,1)
-	       predicted_sleep_state(REM_locs(i)) = 0;  %set that epoch to wake
-	       REM_rescore_counter = REM_rescore_counter+1;
-	   end
+	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
+	% re-score the REM epoch as wake
+	REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
+	epochs_in_REM_window = REM_window_length/epoch_length_in_seconds; 
+	REM_locs = [];
+	if rescore_REM_in_wake
+		REM_locs = find(predicted_sleep_state(:,j)==2);
+		REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
+		REM_rescore_counter=0;
+		for i=1:length(REM_locs)
+			if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1,j)==zeros(epochs_in_REM_window,1)
+	       	predicted_sleep_state(REM_locs(i),j) = 0;  %set that epoch to wake
+	       	REM_rescore_counter = REM_rescore_counter+1;
+	   		end
+		end
+	%disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
 	end
-	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
+
+
+	% Compute agreement stats to choose the best trial
+	if fully_scored
+	kappa(j) = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices,j));
+	[global_agreement(j),wake_agreement(j),SWS_agreement(j),REM_agreement(j)] = compute_agreement(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices,j));
+	else
+		% compute agreement stats on only those epochs that were scored by hand
+		kappa(j) = compute_kappa(SleepState(scored_rows{j}),predicted_sleep_state(scored_rows{j},j));
+		[global_agreement(j),wake_agreement(j),SWS_agreement(j),REM_agreement(j)] = compute_agreement(SleepState(scored_rows{j}),predicted_sleep_state(scored_rows{j},j));
+		%disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
+		% kappa = NaN;
+		% global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
+		% wake_agreement = NaN;
+		% SWS_agreement = NaN;
+		% REM_agreement = NaN;
+	end
+end % end of looping through trials
+
+% Now choose the best trial and use that to write the file and compute agreement stats that get returned by this function.
+overall_score = 0.7*kappa +0.3*global_agreement;
+[~,ranking] = sort(overall_score);
+[best_overall_score,best_trial] = max(overall_score);
+disp(['Trial ' num2str(best_trial) ' is the best'])
+ranking = flip(ranking);  % If you want to see a ranking of the trials based on agreement stats, remove semicolon from this line
+kappa = kappa(best_trial);
+global_agreement = global_agreement(best_trial);
+wake_agreement = wake_agreement(best_trial);
+SWS_agreement = SWS_agreement(best_trial);
+REM_agreement = REM_agreement(best_trial);
+predicted_sleep_state = predicted_sleep_state(:,best_trial);
+if ~fully_scored
+	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
 end
+disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
+
+
 
 figure
-gscatter(PCAvectors(scored_rows,1),PCAvectors(scored_rows,2),SleepState(scored_rows),[1 0 0; 0 0 1; 1 .5 0],'osd');
+gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
 xl = xlim;
 yl = ylim;
 hold on 
@@ -404,20 +465,20 @@ end
 
 
 % Compute statistics about agreement 
-if fully_scored
-kappa = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
-[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
-else
-	% compute agreement stats on only those epochs that were scored by hand
-	kappa = compute_kappa(SleepState(scored_rows),predicted_sleep_state(scored_rows));
-	[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(scored_rows),predicted_sleep_state(scored_rows));
-	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
-	% kappa = NaN;
-	% global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
-	% wake_agreement = NaN;
-	% SWS_agreement = NaN;
-	% REM_agreement = NaN;
-end
+% if fully_scored
+% kappa = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
+% [global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices));
+% else
+% 	% compute agreement stats on only those epochs that were scored by hand
+% 	kappa = compute_kappa(SleepState(scored_rows),predicted_sleep_state(scored_rows));
+% 	[global_agreement,wake_agreement,SWS_agreement,REM_agreement] = compute_agreement(SleepState(scored_rows),predicted_sleep_state(scored_rows));
+% 	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
+% 	% kappa = NaN;
+% 	% global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
+% 	% wake_agreement = NaN;
+% 	% SWS_agreement = NaN;
+% 	% REM_agreement = NaN;
+% end
 
 predicted_score = predicted_sleep_state;
 
@@ -427,4 +488,4 @@ if writefile
 	write_scored_file(filename,predicted_score);
 end
 
-save scatter_data_for_plotly.mat PCAvectors SleepState predicted_sleep_state Feature 
+%save scatter_data_for_plotly.mat PCAvectors SleepState predicted_sleep_state Feature 
