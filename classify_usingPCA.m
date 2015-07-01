@@ -201,9 +201,7 @@ else  % it has been fully scored
 	ind_end   = round(training_end*60*60/epoch_length_in_seconds);
 	original_scored_rows = ind_start:ind_end;
 	original_scored_rows = original_scored_rows(find(SleepState(original_scored_rows)~=5));  % Only use the training data that doesn't have artefacts. 
-	original_scored_rows(1)
-	original_scored_rows(end)
-	pause
+	
 	if sum(SleepState(original_scored_rows)==8)>0
 		error('Some of the Epochs you told me to use as training don''t have any scoring in them.  Please run PCASCOREBATCHMODE again and either choose another range or use all scored epochs as training')
 	end
@@ -214,9 +212,16 @@ end
 if trials.number > 1
 	for i=1:trials.number
 		scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); % replace set to false means I won't get a row repeated
-		while length(find(SleepState(scored_rows{i})==2))<10 
+		tstart = tic;
+		num_REMS_episodes_desired = 10;
+		while length(find(SleepState(scored_rows{i})==2))<num_REMS_episodes_desired
  			scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); 
+	 		time_spent_sampling =toc(tstart);
+	 		if time_spent_sampling > 4
+				num_REMS_episodes_desired = num_REMS_episodes_desired -1;
+			end
 	 	end
+	num_REMS_episodes_desired
 	end	
 elseif trials.number == 1
 	scored_rows{1} = original_scored_rows;
