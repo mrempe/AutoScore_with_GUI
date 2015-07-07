@@ -4,17 +4,44 @@ function [global_agreement,wake_percent_agreement,SWS_percent_agreement,REM_perc
 %
 % both inputs are vectors containing 0,1,2 in each element.  Each element repesents an epoch of data and 0=wake, 1=SWS, 2=REM
 
-vh = human_scored_state_vector;
-vc = computer_scored_state_vector;     % easier names
+% handle the case where the two vectors contain letters fo 
+if iscell(human_scored_state_vector) & iscell(computer_scored_state_vector)
+	
+	% check to see if there are any empty cells in the human-scored data and re-score them as W
+	emptycells = cellfun(@isempty,human_scored_state_vector);
+	 if sum(emptycells) > 0
+		empty_locs = find(emptycells); 
+	 	for i=1:length(empty_locs)
+	 	human_scored_state_vector{empty_locs(i)} = 'W';
+	 	end
+	 end
 
-	% to begin, compute "global agreement" like Rytkonen2011 does:
-	global_agreement=1-(length(find(vh-vc))/length(vh));
 
-	% Wake percent agreement 
-	wake_percent_agreement = (length(find(vh==0 & vc==0)))/length(find(vh==0));
+	vh = cell2mat(human_scored_state_vector);
+	vc = cell2mat(computer_scored_state_vector);
 
-	% SWS percent agreement
-	SWS_percent_agreement = (length(find(vh==1 & vc==1)))/length(find(vh==1));
+	global_agreement = sum(vh==vc)/length(vh);
+	wake_percent_agreement = (length(find(vh=='W' & vc=='W')))/length(find(vh=='W'));
+	SWS_percent_agreement = (length(find(vh=='S' & vc=='S')))/length(find(vh=='S'));
+	REM_percent_agreement = (length(find((vh=='R' | vh=='P') & (vc=='R' | vc=='P'))))/length(find(vh=='R' | vh=='P'));
 
-	% REM percent agreement
-	REM_percent_agreement = (length(find(vh==2 & vc==2)))/length(find(vh==2));
+else
+  % this is the case where the two input vectors consist entirely of numbers (this was what was here originally)
+
+	vh = human_scored_state_vector;
+	vc = computer_scored_state_vector;     % easier names
+
+
+		% to begin, compute "global agreement" like Rytkonen2011 does:
+		global_agreement=1-(length(find(vh-vc))/length(vh));
+
+		% Wake percent agreement 
+		wake_percent_agreement = (length(find(vh==0 & vc==0)))/length(find(vh==0));
+
+		% SWS percent agreement
+		SWS_percent_agreement = (length(find(vh==1 & vc==1)))/length(find(vh==1));
+
+		% REM percent agreement
+		REM_percent_agreement = (length(find(vh==2 & vc==2)))/length(find(vh==2));
+
+end

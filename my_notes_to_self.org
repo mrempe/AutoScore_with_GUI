@@ -21,3 +21,26 @@ I found the problem:  Some of the EMG data were missing.  This meant that the PC
 checks to see if any data are missing.  If an epoch has any missing data (regardless of whether it is in the training data or not) that epoch will be scored as an artefact and left 
 out of the classifying.  It seems to work well now on the one Rat recording and the excel output looks really good.  All artefact epochs are the same as the human-scored file.  
 Keep testing it on the mouse data. 
+
+* July 1, 2015
+I have updated PCASCOREBATCHMODE.m and classify_usingPCA.m to include the option of taking several random subsets of the training data in an effort to improve agreement. 
+Also, I'm requiring a subsample of training data to include at least 10 episodes of REMS, but if it runs for more than two seconds and still can't get a sample with 
+10 episodes of REMS, it will relax that restriction to be only 9, then 8, etc.
+
+keep testing Epoch-Based-Processing\Timed_intervals\export\AutomatedScoring\AutoScore_with_GUI on 2-second data and other files.    
+
+* July 2, 2015
+I've been working on compare_scoring_in_two_files.m and it may be almost working.  The idea is to make compute_agreement.m more robust by allowing it to handle
+cell arrays of characters (W, S, R) instead of just vectors of 0,1,2.  It may be working, but one issue was how to deal with empty scoring in the human-scored file. 
+The agreement parameters weren't quite matching up between the PCASCOREBATCHMODE.m and this new version of compute_agreement, but it may be because of missing scoring in the 
+human-scored file.  Keep checking this.  You may also try filling in the missing data with W and seeing if that changes to agreement stats in PCASCOREBATCHMODE to match. 
+file is autoscore_and_epcoh_length_study_data\BA1213_Manual.txt
+
+* July 6, 2015
+I have fixed compare_scoring_in_two_files.m.  This issue was that when you are computing global agreement, and agreement for each state you need to know which one
+is considered the standard.  This has always been the human-scored version when I call this function for the autoscoring stuff.  Now, when using this to compare
+two human scorers it isn't clear which one should be the standard.  We need to have a standard because each formula (apart from global agreement) computes the 
+number of epochs scored as each state by both methods divided by the number of epochs classified as that type by the human scorer.  
+
+So, the best way to use compare_scoring_in_two_files.m is just to compute global agreement and kappa.  The other agreement stats don't really make sense.  
+

@@ -217,11 +217,11 @@ if trials.number > 1
 		while length(find(SleepState(scored_rows{i})==2))<num_REMS_episodes_desired
  			scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); 
 	 		time_spent_sampling =toc(tstart);
-	 		if time_spent_sampling > 4
+	 		if time_spent_sampling > 2   % if it requires more than 4 seconds, relax the requirement for REMS episodes
 				num_REMS_episodes_desired = num_REMS_episodes_desired -1;
+			tstart = tic;
 			end
 	 	end
-	num_REMS_episodes_desired
 	end	
 elseif trials.number == 1
 	scored_rows{1} = original_scored_rows;
@@ -305,6 +305,7 @@ for j=1:trials.number
 	end
 
 
+
 	% Compute agreement stats to choose the best trial
 	if fully_scored
 	kappa(j) = compute_kappa(SleepState(non_artefact_indices),predicted_sleep_state(non_artefact_indices,j));
@@ -326,7 +327,7 @@ end % end of looping through trials
 overall_score = 0.7*kappa +0.3*global_agreement;
 [~,ranking] = sort(overall_score);
 [best_overall_score,best_trial] = max(overall_score);
-disp(['Trial ' num2str(best_trial) ' is the best'])
+%disp(['Trial ' num2str(best_trial) ' is the best'])
 ranking = flip(ranking);  % If you want to see a ranking of the trials based on agreement stats, remove semicolon from this line
 kappa = kappa(best_trial);
 global_agreement = global_agreement(best_trial);
