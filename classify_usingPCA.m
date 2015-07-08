@@ -271,20 +271,25 @@ for j=1:trials.number
 	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
 	predicted_sleep_state(find(SleepState==5),j)=5;
 
-	[predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
-	%err 
-
+% if NaiveBayes
+	% [predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	% err 
+% end  
 	%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
 
 
-
+% if RandomForest
 	% Or do a random forest
-	% B=TreeBagger(500,PCAvectors(scored_rows,1:3),SleepState(scored_rows));  %build 50 bagged decision trees
-	% bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
-	% predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
-	% predicted_sleep_state = str2num(predicted_sleep_state);
-	% length(find(predicted_sleep_state==5))
-
+	B=TreeBagger(50,PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'OOBVarImp','On');  %build 50 bagged decision trees
+	figure
+	% plot(oobError(B));
+	% xlabel('Number of Grown Trees')
+	% ylabel('Out-of-Bag Classification Error')
+	% pause
+	bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
+	predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
+	predicted_sleep_state = str2num(predicted_sleep_state);
+% end 
 
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
@@ -301,7 +306,6 @@ for j=1:trials.number
 	       	REM_rescore_counter = REM_rescore_counter+1;
 	   		end
 		end
-	%disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
 	end
 
 
@@ -338,36 +342,39 @@ predicted_sleep_state = predicted_sleep_state(:,best_trial);
 if ~fully_scored
 	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
 end
-disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
-
+if rescore_REM_in_wake
+	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
+end
 
 
 figure
 gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
-xl = xlim;
-yl = ylim;
-hold on 
-K = coeff(2,3).const;
-L = coeff(2,3).linear;
-%Q = coeff(1,2).quadratic;
-% Function to compute K + L*v + v'*Q*v for multiple vectors
-% v=[x;y]. Accepts x and y as scalars or column vectors.
-f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-set(h2,'Color','r','LineWidth',2)
 
-K = coeff(1,2).const;
-L = coeff(1,2).linear;
-f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-set(h2,'Color','k','LineWidth',2)
+%if NaiveBayes
+% xl = xlim;
+% yl = ylim;
+% hold on 
+% K = coeff(2,3).const;
+% L = coeff(2,3).linear;
+% %Q = coeff(1,2).quadratic;
+% % Function to compute K + L*v + v'*Q*v for multiple vectors
+% % v=[x;y]. Accepts x and y as scalars or column vectors.
+% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+% set(h2,'Color','r','LineWidth',2)
 
-K = coeff(1,3).const;
-L = coeff(1,3).linear;
-f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-set(h2,'Color','b','LineWidth',2)
+% K = coeff(1,2).const;
+% L = coeff(1,2).linear;
+% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+% set(h2,'Color','k','LineWidth',2)
 
+% K = coeff(1,3).const;
+% L = coeff(1,3).linear;
+% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+% set(h2,'Color','b','LineWidth',2)
+%end   % end of NaiveBayes if statement
 % Compare human-scored vs computer scored
 figure
 subplot(1,2,1)
@@ -491,7 +498,13 @@ predicted_score = predicted_sleep_state;
 % export a new excel file where the column of sleep state has been overwritten with the computer-scored
 % sleep states
 if writefile
-	write_scored_file(filename,predicted_score);
+	% first make a directory based on the time stamp
+	a=find(filename=='\')
+	date_time = datestr(now,'mm.dd.yyyy.hh.MM');
+	output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time)
+	[sucess,message,~]=mkdir(output_directory)
+	write_scored_file(filename,output_directory,predicted_score);
+	%write_scored_file(filename,predicted_score);  %previous version
 end
 
 %save scatter_data_for_plotly.mat PCAvectors SleepState predicted_sleep_state Feature 

@@ -1,4 +1,4 @@
-function write_scored_file(filename,predicted_score)
+function write_scored_file(filename,directory,predicted_score)
 %
 % Usage: write_scored_file(filename,predicted_score)
 %
@@ -9,11 +9,13 @@ function write_scored_file(filename,predicted_score)
 %
 % inputs:
 % filename           .txt file from which we are overwriting the sleep state info, but keeping everything else
+% directory:		 the directory where the autoscored file will be written.
 % predicted_score    the output of classify.m generated in classify_usingPCA.m
 
 % First copy the original file so we don't mess it up
  a = find(filename=='.');
- newfilename = strcat(filename(1:a-1), 'AUTOSCORED', filename(a:end));
+ d = find(filename=='\');
+ newfilename = strcat(directory,'\',filename(d(end)+1:a(end)-1), 'AUTOSCORED', filename(a(end):end));
  copyfile(filename,newfilename,'f');
 
 
@@ -48,8 +50,6 @@ xl.setCells(sheet,[2,3],sleepstate_vec,'FFEE00');
 
 
 a=find(newfilename=='\');
-disp('before saveAs command')
 xl.saveAs(newfilename(a+1:end),newfilename(1:a));
-disp('after saveAs command')
 fclose('all')  %so Excel doesn't think MATLAB still has the file open
 
