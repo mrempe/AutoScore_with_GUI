@@ -1,5 +1,5 @@
-function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,trials,writefile)
-	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,signal,restrict,training_start,training_end,trials,writefile)
+function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile)
+	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile)
 	%
 	%
 	% This function uses a Principal Component Analysis approach to classify the sleep state of each epoch of the file filename. 
@@ -14,6 +14,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	% Inputs:
 	%        filename:      name of the .txt file. This can either be partially-scored or fully scored. 
 	%
+	%		 method:        either 'NaiveBayes' or 'RandomForest'.  Which classification method to use (after doing PCA)
 	%        signal:        'EEG1' or 'EEG2'.  Which signal to use.
 	%
 	%
@@ -31,6 +32,9 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	%        writefile:     1 if you want to generate a new .txt file, 0 if you don't
 	%
 	%
+
+
+
 
 rescore_REM_in_wake =1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
                          % Set this to 0 if you have data from narcolepsy, sleep apnea or some other condition where REM 
@@ -271,25 +275,25 @@ for j=1:trials.number
 	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
 	predicted_sleep_state(find(SleepState==5),j)=5;
 
-% if NaiveBayes
-	% [predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
-	% err 
-% end  
+ if strcmp(method,'NaiveBayes')
+	 [predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	 err 
+ end  
 	%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
 
 
-% if RandomForest
+ if strcmp(method,'RandomForest')
 	% Or do a random forest
 	B=TreeBagger(50,PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'OOBVarImp','On');  %build 50 bagged decision trees
 	figure
-	% plot(oobError(B));
-	% xlabel('Number of Grown Trees')
-	% ylabel('Out-of-Bag Classification Error')
+	plot(oobError(B));
+	xlabel('Number of Grown Trees')
+	ylabel('Out-of-Bag Classification Error')
 	% pause
 	bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
 	predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
 	predicted_sleep_state = str2num(predicted_sleep_state);
-% end 
+ end 
 
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
@@ -346,35 +350,34 @@ if rescore_REM_in_wake
 	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
 end
 
+if strcmp(method,'NaiveBayes')
+	figure
+	gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
 
-figure
-gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
+	xl = xlim;
+	yl = ylim;
+	hold on 
+	K = coeff(2,3).const;
+	L = coeff(2,3).linear;
+	%Q = coeff(1,2).quadratic;
+	% Function to compute K + L*v + v'*Q*v for multiple vectors
+	% v=[x;y]. Accepts x and y as scalars or column vectors.
+	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+	set(h2,'Color','r','LineWidth',2)
 
-%if NaiveBayes
-% xl = xlim;
-% yl = ylim;
-% hold on 
-% K = coeff(2,3).const;
-% L = coeff(2,3).linear;
-% %Q = coeff(1,2).quadratic;
-% % Function to compute K + L*v + v'*Q*v for multiple vectors
-% % v=[x;y]. Accepts x and y as scalars or column vectors.
-% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-% set(h2,'Color','r','LineWidth',2)
+	K = coeff(1,2).const;
+	L = coeff(1,2).linear;
+	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+	set(h2,'Color','k','LineWidth',2)
 
-% K = coeff(1,2).const;
-% L = coeff(1,2).linear;
-% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-% set(h2,'Color','k','LineWidth',2)
-
-% K = coeff(1,3).const;
-% L = coeff(1,3).linear;
-% f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-% set(h2,'Color','b','LineWidth',2)
-%end   % end of NaiveBayes if statement
+	K = coeff(1,3).const;
+	L = coeff(1,3).linear;
+	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+	set(h2,'Color','b','LineWidth',2)
+end   % end of NaiveBayes if statement
 % Compare human-scored vs computer scored
 figure
 subplot(1,2,1)
@@ -399,7 +402,7 @@ legend boxoff
 yl1 = ylim;  % ylimits
 xl1 = xlim;  % xlimits
 
- subplot(1,2,2)
+subplot(1,2,2)
 wake_locs_machine = find(predicted_sleep_state==0);
 SWS_locs_machine  = find(predicted_sleep_state==1);
 REM_locs_machine  = find(predicted_sleep_state==2);
@@ -499,10 +502,10 @@ predicted_score = predicted_sleep_state;
 % sleep states
 if writefile
 	% first make a directory based on the time stamp
-	a=find(filename=='\')
+	a=find(filename=='\');
 	date_time = datestr(now,'mm.dd.yyyy.hh.MM');
-	output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time)
-	[sucess,message,~]=mkdir(output_directory)
+	output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
+	mkdir(output_directory)
 	write_scored_file(filename,output_directory,predicted_score);
 	%write_scored_file(filename,predicted_score);  %previous version
 end

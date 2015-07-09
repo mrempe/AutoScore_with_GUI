@@ -12,7 +12,9 @@ function agreement_between_two = compare_scoring_in_two_files
 
 
 % GUI to read in two files 
- [files,directory] = uigetfile('Multiselect','on','D:\*.txt','Please Select two .txt file(s) to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+ [files{1},directory1] = uigetfile('D:\*.txt','Please Select the first txt file to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+ [files{2},directory2] = uigetfile('D:\*.txt','Please Select the first txt file to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+
  if ~iscell(files), files = {files}; 
  end
 
@@ -24,8 +26,8 @@ function agreement_between_two = compare_scoring_in_two_files
 
 
 % extract the data from each file
- [data1,textdata1]=importdatafile([directory files{1}]);
- [data2,textdata2]=importdatafile([directory files{2}]);
+ [data1,textdata1]=importdatafile([directory1 files{1}]);
+ [data2,textdata2]=importdatafile([directory2 files{2}]);
 
 % NOTE: these agreements stats may be off because a lot depends on which file is considered the standard. 
 % compute_agreement.m was made to compare human scoring to machine scoring and it considers human scoring the standard.

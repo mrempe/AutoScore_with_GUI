@@ -27,20 +27,21 @@ function agreement_stats=PCASCOREBATCHMODE
 % files = {files};
 % directory = 'D:\mrempe\';
 
-prompt = {'Do you want to use EEG1 or EEG2?', ...
+prompt = {'Which Automated Scoring method do you want to use, NaiveBayes or RandomForest?', 'Do you want to use EEG1 or EEG2?', ...
 'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)','Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)', ...
 'Use all scored epochs as training data? (1 for yes, 0 for no)', 'Would you like to perform repeated trials using random subsets of the training data? (1 for yes, 0 for no)'};
-defaults = {'EEG2','0','1','1','1'}; 
+defaults = {'NaiveBayes','EEG2','0','1','1','1'}; 
 dlg_title = 'Input';
 inputs = inputdlg(prompt,dlg_title,1,defaults,'on');
 
-signal=inputs{1};
-restrict = str2double(inputs{2});
-writefile = str2double(inputs{3});
-use_all_as_training = str2double(inputs{4});
-repeated_trials = str2double(inputs{5});
+method = inputs{1};
+signal = inputs{2};
+restrict = str2double(inputs{3});
+writefile = str2double(inputs{4});
+use_all_as_training = str2double(inputs{5});
+repeated_trials = str2double(inputs{6});
 
-if repeated_trials
+if repeated_trials & strcmp(method,'NaiveBayes')  % if you are doing NaiveBayes and you want to do repeated trials
 	prompt2 = {'How many repeated trials would you like to perform for each file?', ...
 	'When performing repeated trials, what fraction of the training data would you like to use?'};
 	defaults2 = {'10','0.05'};
@@ -81,7 +82,7 @@ end
 % Run classify_usingPCA.m on each file
 for i=1:length(files)
 	files{i}
-	[predicted_score,dynamic_range(i),kappa(i),global_agreement(i),wake_agreement(i),SWS_agreement(i),REM_agreement(i)]=classify_usingPCA([directory files{i}],signal,restrict,training_start_time,training_end_time,trials,writefile);
+	[predicted_score,dynamic_range(i),kappa(i),global_agreement(i),wake_agreement(i),SWS_agreement(i),REM_agreement(i)]=classify_usingPCA([directory files{i}],method,signal,restrict,training_start_time,training_end_time,trials,writefile);
 	
 clear predicted_score 
 end
@@ -99,14 +100,16 @@ if length(files)==1 && ~isnan(kappa)    % Case where only one file has been auto
 	ax.XTick = [1,2,3,4,5];
 	ax.XTickLabel = {'Wake','SWS','REM','Overall','Kappa'};
 	set(ax,'YGrid','on')	
-	title(directory)
+	dir_in_title=regexprep(directory,'\\','\\\\');
+	title(dir_in_title)
 elseif length(files) > 1
 	figure
 	boxplot([wake_agreement',SWS_agreement',REM_agreement',global_agreement',kappa'],'labels',{'Wake', 'SWS', 'REM', 'Overall', 'Kappa'}, ...
 	'plotstyle','compact','boxstyle','filled','colors','rb');
 	ax=gca();
 	set(ax,'YGrid','on')
-	title(directory)
+	dir_in_title=regexprep(directory,'\\','\\\\');
+	title(dir_in_title)
 end
 	
 

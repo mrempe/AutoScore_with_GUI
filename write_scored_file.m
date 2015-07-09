@@ -51,5 +51,5 @@ xl.setCells(sheet,[2,3],sleepstate_vec,'FFEE00');
 
 a=find(newfilename=='\');
 xl.saveAs(newfilename(a+1:end),newfilename(1:a));
-fclose('all')  %so Excel doesn't think MATLAB still has the file open
+fclose('all');  %so Excel doesn't think MATLAB still has the file open
 

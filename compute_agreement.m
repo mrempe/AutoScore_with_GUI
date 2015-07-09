@@ -19,7 +19,7 @@ if iscell(human_scored_state_vector) & iscell(computer_scored_state_vector)
 
 	vh = cell2mat(human_scored_state_vector);
 	vc = cell2mat(computer_scored_state_vector);
-
+	
 	global_agreement = sum(vh==vc)/length(vh);
 	wake_percent_agreement = (length(find(vh=='W' & vc=='W')))/length(find(vh=='W'));
 	SWS_percent_agreement = (length(find(vh=='S' & vc=='S')))/length(find(vh=='S'));
