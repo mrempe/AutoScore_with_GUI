@@ -347,7 +347,7 @@ if ~fully_scored
 	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
 end
 if rescore_REM_in_wake
-	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(predicted_sleep_state))),'% of the entire recording.'])
+	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(REM_locs))),'% of the epochs originally scored as REM'])
 end
 
 if strcmp(method,'NaiveBayes')
