@@ -312,7 +312,7 @@ for j=1:trials.number
 		REM_locs = find(predicted_sleep_state(:,j)==2);
 		%REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
 		
-		for i=1:length(REM_locs)
+		for i=epochs_in_REM_window+1:length(REM_locs)
 			if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1,j)==zeros(epochs_in_REM_window,1)
 	       	predicted_sleep_state(REM_locs(i),j) = 0;  %set that epoch to wake
 	       	REM_rescore_counter = REM_rescore_counter+1;

@@ -115,5 +115,5 @@ agreement_stats.global = global_agreement;
 agreement_stats.kappa  = kappa;
 
 if write_agree_file
-	write_agreement_file(directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,agreement_stats.kappa,agreement_stats.global)
+	write_agreement_file(files,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,agreement_stats.kappa,agreement_stats.global)
 end
