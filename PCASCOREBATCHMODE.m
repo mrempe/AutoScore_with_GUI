@@ -29,8 +29,9 @@ function agreement_stats=PCASCOREBATCHMODE
 
 prompt = {'Which Automated Scoring method do you want to use, NaiveBayes or RandomForest?', 'Do you want to use EEG1 or EEG2?', ...
 'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)','Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)', ...
-'Use all scored epochs as training data? (1 for yes, 0 for no)', 'Would you like to perform repeated trials using random subsets of the training data? (1 for yes, 0 for no)'};
-defaults = {'NaiveBayes','EEG2','0','1','1','1'}; 
+'Do you want to create a spreadsheet with kappa and global agreement and a DataSourceInfo tab? (1 for yes, 0 for no)','Use all scored epochs as training data? (1 for yes, 0 for no)', ...
+'Would you like to perform repeated trials using random subsets of the training data? (1 for yes, 0 for no)'};
+defaults = {'NaiveBayes','EEG2','0','1','1','1','1'}; 
 dlg_title = 'Input';
 inputs = inputdlg(prompt,dlg_title,1,defaults,'on');
 
@@ -38,8 +39,9 @@ method = inputs{1};
 signal = inputs{2};
 restrict = str2double(inputs{3});
 writefile = str2double(inputs{4});
-use_all_as_training = str2double(inputs{5});
-repeated_trials = str2double(inputs{6});
+write_agree_file = str2double(inputs{5});
+use_all_as_training = str2double(inputs{6});
+repeated_trials = str2double(inputs{7});
 
 if repeated_trials & strcmp(method,'NaiveBayes')  % if you are doing NaiveBayes and you want to do repeated trials
 	prompt2 = {'How many repeated trials would you like to perform for each file?', ...
@@ -55,13 +57,6 @@ else
 end
 
 
-% trials.number = 10;
-% trials.fraction_training_data = 0.05;
-
-% signal='EEG2';
-% restrict = 0;
-% writefile = 0;
-% use_all_as_training = 1;
 
 % Handle the case where you don't use all the scored epochs as training data (ask for times of beginning and end of training data)
 if use_all_as_training == 0
@@ -119,3 +114,6 @@ agreement_stats.REM    = REM_agreement;
 agreement_stats.global = global_agreement;
 agreement_stats.kappa  = kappa;
 
+if write_agree_file
+	write_agreement_file(directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,agreement_stats.kappa,agreement_stats.global)
+end

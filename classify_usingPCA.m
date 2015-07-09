@@ -31,7 +31,8 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	%
 	%        writefile:     1 if you want to generate a new .txt file, 0 if you don't
 	%
-	%
+	%		 write_agreement_file: 1 if you want to generate an .xls spreadsheet that contains filenames, kappa and global agreement for each file. And a data source info tab. 
+	%    							0 if you don't want to write this .xls file.  
 
 
 
@@ -42,13 +43,13 @@ rescore_REM_in_wake =1;  % FLAG.  If =1, then each epoch scored as REM preceeded
 
 
 if nargin==3
-	training_start=[];training_end=[]; writefile=0;
+	training_start=[];training_end=[]; writefile=0; 
 end
 if nargin==4
-	training_end=[]; writefile=0;
+	training_end=[]; writefile=0; 
 end
 if nargin==5
-	writefile=0;
+	writefile=0; 
 end
 
 
@@ -283,13 +284,13 @@ for j=1:trials.number
 
 
  if strcmp(method,'RandomForest')
-	% Or do a random forest
+	
 	B=TreeBagger(50,PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'OOBVarImp','On');  %build 50 bagged decision trees
 	figure
 	plot(oobError(B));
 	xlabel('Number of Grown Trees')
 	ylabel('Out-of-Bag Classification Error')
-	% pause
+	
 	bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
 	predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
 	predicted_sleep_state = str2num(predicted_sleep_state);
@@ -298,12 +299,19 @@ for j=1:trials.number
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
 	REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
-	epochs_in_REM_window = REM_window_length/epoch_length_in_seconds; 
+	epochs_in_REM_window = round(REM_window_length/epoch_length_in_seconds); 
 	REM_locs = [];
+	REM_rescore_counter=0;
 	if rescore_REM_in_wake
+		for i=1:epochs_in_REM_window %If REM occurs in first 30 seconds of recording, rescore it as wake
+			if predicted_sleep_state(i)==2
+				predicted_sleep_state(i)==0;
+				REM_rescore_counter = REM_rescore_counter+1;
+			end
+		end
 		REM_locs = find(predicted_sleep_state(:,j)==2);
-		REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
-		REM_rescore_counter=0;
+		%REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
+		
 		for i=1:length(REM_locs)
 			if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1,j)==zeros(epochs_in_REM_window,1)
 	       	predicted_sleep_state(REM_locs(i),j) = 0;  %set that epoch to wake
@@ -322,12 +330,7 @@ for j=1:trials.number
 		% compute agreement stats on only those epochs that were scored by hand
 		kappa(j) = compute_kappa(SleepState(scored_rows{j}),predicted_sleep_state(scored_rows{j},j));
 		[global_agreement(j),wake_agreement(j),SWS_agreement(j),REM_agreement(j)] = compute_agreement(SleepState(scored_rows{j}),predicted_sleep_state(scored_rows{j},j));
-		%disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
-		% kappa = NaN;
-		% global_agreement = NaN;         % if the original file hasn't been fully scored by a human, don't compute agreement statistics
-		% wake_agreement = NaN;
-		% SWS_agreement = NaN;
-		% REM_agreement = NaN;
+		
 	end
 end % end of looping through trials
 
@@ -347,7 +350,7 @@ if ~fully_scored
 	disp('WARNING: The agreement parameters refer only to the subset of data that was scored by a human, not the entire dataset')
 end
 if rescore_REM_in_wake
-	disp(['I rescored ', num2str(REM_rescore_counter), ' REM episodes as wake.  This is ', num2str(100*(REM_rescore_counter/length(REM_locs))),'% of the epochs originally scored as REM'])
+	disp(['I rescored ', num2str(REM_rescore_counter), ' REM epochs as wake.  This is ', num2str(100*(REM_rescore_counter/length(REM_locs))),'% of the epochs originally scored as REM'])
 end
 
 if strcmp(method,'NaiveBayes')
@@ -509,5 +512,7 @@ if writefile
 	write_scored_file(filename,output_directory,predicted_score);
 	%write_scored_file(filename,predicted_score);  %previous version
 end
+
+
 
 %save scatter_data_for_plotly.mat PCAvectors SleepState predicted_sleep_state Feature 

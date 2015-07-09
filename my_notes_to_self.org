@@ -48,6 +48,7 @@ So, the best way to use compare_scoring_in_two_files.m is just to compute global
 To Do:
 1) Figure out why some autoscored files don't seem to follow the REM rescoring rule.  Janne said she had one that scored lots of REM following wake (perhaps it wasn't enough 
 wake to trigger the rescoring rule? )
+1a) Figure out why file E2753 week 1 doesn't get read in correctly.  
 2) For Rahmi: Compute kappa on all the .txt files in FS1\EGR3 Project\Clozapine\RahmiScoring and Jonthan Scoring.  
 3) Autoscore all the files in both of the directories from step 2. 
 3a) Compute kappa on Jonathan vs Rahmi, Computer vs Jonathan, Computer vs Rahmi, etc.  
@@ -55,6 +56,7 @@ wake to trigger the rescoring rule? )
 5) From Janne: try including theta/beta ratio as one of the 7 features as a way to better detect REM. 
 6) Write agreement struct to an excel spreadsheet with filenames in the first column and kappa and global agreement in the next two columns.  Save this spreadsheet 
 in FS1\EGR3\Clozapine\NemriVsWisorTxts\  
-7) Make one excel spreadsheet when autoscoring several files in one directory.  It should have the filenames, kappa, and global agreement and data source info tab. 
-8) Find Jon Brenneke's txt2edf function.  May be .m or .py.  on UltraRoss or TDT3 system.  
+XX7) Make one excel spreadsheet when autoscoring several files in one directory.  It should have the filenames, kappa, and global agreement and data source info tab. 
+8) Find Jon Brenneke's txt2edf function.  May be .m or .py.  on UltraRoss or TDT3 system. It would be very helpful to get autoscoring back into Neuroscore so they 
+can check and modify if needed.   
 
