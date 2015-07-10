@@ -58,5 +58,7 @@ wake to trigger the rescoring rule? )
 in FS1\EGR3\Clozapine\NemriVsWisorTxts\  
 XX7) Make one excel spreadsheet when autoscoring several files in one directory.  It should have the filenames, kappa, and global agreement and data source info tab. 
 8) Find Jon Brenneke's txt2edf function.  May be .m or .py.  on UltraRoss or TDT3 system. It would be very helpful to get autoscoring back into Neuroscore so they 
-can check and modify if needed.   
+can check and modify if needed. 
+9) Migrate stuff from D: drive to FS1
+  
 

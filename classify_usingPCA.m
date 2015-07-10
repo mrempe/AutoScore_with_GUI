@@ -1,4 +1,4 @@
-function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile)
+function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile,output_directory)
 	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile)
 	%
 	%
@@ -213,7 +213,7 @@ else  % it has been fully scored
 end
 
 % MULTIPLE TRIALS
-% use a random 5% of the scored epochs as training data
+% use a random percentage of the scored epochs as training data
 if trials.number > 1
 	for i=1:trials.number
 		scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); % replace set to false means I won't get a row repeated
@@ -296,6 +296,7 @@ for j=1:trials.number
 	predicted_sleep_state = str2num(predicted_sleep_state);
  end 
 
+
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
 	REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
@@ -304,15 +305,16 @@ for j=1:trials.number
 	REM_rescore_counter=0;
 	if rescore_REM_in_wake
 		for i=1:epochs_in_REM_window %If REM occurs in first 30 seconds of recording, rescore it as wake
-			if predicted_sleep_state(i)==2
-				predicted_sleep_state(i)==0;
+			if predicted_sleep_state(i,j)==2
+				predicted_sleep_state(i,j)=0;
 				REM_rescore_counter = REM_rescore_counter+1;
 			end
 		end
 		REM_locs = find(predicted_sleep_state(:,j)==2);
 		%REM_locs = REM_locs(find(REM_locs>epochs_in_REM_window));  % in case you get an epoch in the first three that is REM
 		
-		for i=epochs_in_REM_window+1:length(REM_locs)
+		
+		for i=1:length(REM_locs)
 			if predicted_sleep_state(REM_locs(i)-epochs_in_REM_window:REM_locs(i)-1,j)==zeros(epochs_in_REM_window,1)
 	       	predicted_sleep_state(REM_locs(i),j) = 0;  %set that epoch to wake
 	       	REM_rescore_counter = REM_rescore_counter+1;
@@ -505,10 +507,10 @@ predicted_score = predicted_sleep_state;
 % sleep states
 if writefile
 	% first make a directory based on the time stamp
-	a=find(filename=='\');
-	date_time = datestr(now,'mm.dd.yyyy.hh.MM');
-	output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
-	mkdir(output_directory)
+	% a=find(filename=='\');
+	% date_time = datestr(now,'mm.dd.yyyy.hh.MM');
+	% output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
+	% mkdir(output_directory)
 	write_scored_file(filename,output_directory,predicted_score);
 	%write_scored_file(filename,predicted_score);  %previous version
 end

@@ -30,7 +30,7 @@ function agreement_stats=PCASCOREBATCHMODE
 prompt = {'Which Automated Scoring method do you want to use, NaiveBayes or RandomForest?', 'Do you want to use EEG1 or EEG2?', ...
 'Do you want to restrict the dataset to only 8640 epochs? (1 for yes, 0 for no)','Do you want to write an auto-scored .txt file? (1 for yes, 0 for no)', ...
 'Do you want to create a spreadsheet with kappa and global agreement and a DataSourceInfo tab? (1 for yes, 0 for no)','Use all scored epochs as training data? (1 for yes, 0 for no)', ...
-'Would you like to perform repeated trials using random subsets of the training data? (1 for yes, 0 for no)'};
+'Would you like to perform repeated trials using random subsets of the training data? (only applies to NaiveBayes) [1 for yes, 0 for no]'};
 defaults = {'NaiveBayes','EEG2','0','1','1','1','1'}; 
 dlg_title = 'Input';
 inputs = inputdlg(prompt,dlg_title,1,defaults,'on');
@@ -72,12 +72,21 @@ else
 end
 
 
+% set up directory for output files (if making them)
+date_time = datestr(now,'mm.dd.yyyy.hh.MM');
+output_directory = strcat(directory,'Autoscore_output_',date_time);
+if writefile
+	mkdir(output_directory)
+end
+
+
+
 
 
 % Run classify_usingPCA.m on each file
 for i=1:length(files)
 	files{i}
-	[predicted_score,dynamic_range(i),kappa(i),global_agreement(i),wake_agreement(i),SWS_agreement(i),REM_agreement(i)]=classify_usingPCA([directory files{i}],method,signal,restrict,training_start_time,training_end_time,trials,writefile);
+	[predicted_score,dynamic_range(i),kappa(i),global_agreement(i),wake_agreement(i),SWS_agreement(i),REM_agreement(i)]=classify_usingPCA([directory files{i}],method,signal,restrict,training_start_time,training_end_time,trials,writefile,output_directory);
 	
 clear predicted_score 
 end
