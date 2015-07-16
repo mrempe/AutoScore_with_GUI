@@ -21,7 +21,7 @@ function agreement_stats=PCASCOREBATCHMODE
 
 
 % Pop up a window 
- [files,directory] = uigetfile('Multiselect','on','D:\*.txt','Please Select .txt file(s) to autoscore');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+ [files,directory] = uigetfile('Multiselect','on','D:\*.txt','PCASCOREBATCHMODE!  Please select the .txt file(s) you would like to autoscore');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
  if ~iscell(files), files = {files}; end
 % files = 'BA1214_Training.txt';
 % files = {files};
@@ -106,6 +106,7 @@ if length(files)==1 && ~isnan(kappa)    % Case where only one file has been auto
 	set(ax,'YGrid','on')	
 	dir_in_title=regexprep(directory,'\\','\\\\');
 	title(dir_in_title)
+	ylim([0 1])
 elseif length(files) > 1
 	figure
 	boxplot([wake_agreement',SWS_agreement',REM_agreement',global_agreement',kappa'],'labels',{'Wake', 'SWS', 'REM', 'Overall', 'Kappa'}, ...
@@ -114,6 +115,7 @@ elseif length(files) > 1
 	set(ax,'YGrid','on')
 	dir_in_title=regexprep(directory,'\\','\\\\');
 	title(dir_in_title)
+	ylim([0 1])
 end
 	
 
@@ -124,5 +126,5 @@ agreement_stats.global = global_agreement;
 agreement_stats.kappa  = kappa;
 
 if write_agree_file
-	write_agreement_file(files,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,agreement_stats.kappa,agreement_stats.global)
+	write_agreement_file(files,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,training_start_time,training_end_time,trials,agreement_stats.kappa,agreement_stats.global)
 end

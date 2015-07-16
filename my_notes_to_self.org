@@ -46,19 +46,24 @@ So, the best way to use compare_scoring_in_two_files.m is just to compute global
 
 * July 8, 2015
 To Do:
-1) Figure out why some autoscored files don't seem to follow the REM rescoring rule.  Janne said she had one that scored lots of REM following wake (perhaps it wasn't enough 
-wake to trigger the rescoring rule? )
-1a) Figure out why file E2753 week 1 doesn't get read in correctly.  
-2) For Rahmi: Compute kappa on all the .txt files in FS1\EGR3 Project\Clozapine\RahmiScoring and Jonthan Scoring.  
+XX1) Figure out why some autoscored files don't seem to follow the REM rescoring rule.  Janne said she had one that scored lots of REM following wake (perhaps it wasn't enough 
+wake to trigger the rescoring rule? ) FIXED: REMS was happening in the first 3 epochs.  
+XX1a) Figure out why file E2753 week 1 doesn't get read in correctly. It seems to work now.  I don't know why it didn't before.   
+2) For Rahmi: Compute kappa on all the .txt files in FS1\EGR3 Project\Clozapine\RahmiScoring and Jonthan Scoring.  Do this when they have scored a few more files.  
 3) Autoscore all the files in both of the directories from step 2. 
 3a) Compute kappa on Jonathan vs Rahmi, Computer vs Jonathan, Computer vs Rahmi, etc.  
-4) For Michelle: make a spreadsheet that has filenames, and whether lactate is good in 24 hrs, 48 hours, 60 hours, etc.  (Saved as EGR3 project/Lactate EEG/Output Files\lactate_analysis.xls).  Have Michelle come by and look at the lactate signals.  Think about what to do for junk lactate signals, (like negative values)
+XX4) For Michelle: make a spreadsheet that has filenames, and whether lactate is good in 24 hrs, 48 hours, 60 hours, etc.  (Saved as EGR3 project/Lactate EEG/Output Files\lactate_analysis.xls).   Think about what to do for junk lactate signals, (like negative values)
 5) From Janne: try including theta/beta ratio as one of the 7 features as a way to better detect REM. 
-6) Write agreement struct to an excel spreadsheet with filenames in the first column and kappa and global agreement in the next two columns.  Save this spreadsheet 
+XX6) Write agreement struct to an excel spreadsheet with filenames in the first column and kappa and global agreement in the next two columns.  Save this spreadsheet 
 in FS1\EGR3\Clozapine\NemriVsWisorTxts\  
 XX7) Make one excel spreadsheet when autoscoring several files in one directory.  It should have the filenames, kappa, and global agreement and data source info tab. 
 8) Find Jon Brenneke's txt2edf function.  May be .m or .py.  on UltraRoss or TDT3 system. It would be very helpful to get autoscoring back into Neuroscore so they 
-can check and modify if needed. 
+can check and modify if needed. Update: txt2edf was only for edf files made on the MC_Data tool.  I found zdb.py, but I couldn't get it to run in Windows. It ran
+on my laptop, but said "I wasn't able to assign a score" for every epoch of the file.  Will says that a version he has was working recently.  
 9) Migrate stuff from D: drive to FS1
-  
 
+
+* July 16, 2015
+I have written a new file write_scored_file_fast.m to write the autoscored file without having to click on the Excel window that asks you if you want to replace the file....
+The good news is that it seems to work and you don't have to do any clicking on windows.  The bad news:  it is much slower than write_scored_file.m which uses XL.m. 
+It relies on dlmcell.m which is from MATLAB central and writes a cell array to a tab-delimited file.  It seems to work, but is slow.  Maybe I can speed it up.  

@@ -13,7 +13,7 @@ function agreement_between_two = compare_scoring_in_two_files
 
 % GUI to read in two files 
  [files{1},directory1] = uigetfile('D:\*.txt','Please Select the first txt file to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
- [files{2},directory2] = uigetfile('D:\*.txt','Please Select the first txt file to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+ [files{2},directory2] = uigetfile('D:\*.txt','Please Select the second txt file to compare');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
 
  if ~iscell(files), files = {files}; 
  end

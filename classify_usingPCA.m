@@ -31,8 +31,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 	%
 	%        writefile:     1 if you want to generate a new .txt file, 0 if you don't
 	%
-	%		 write_agreement_file: 1 if you want to generate an .xls spreadsheet that contains filenames, kappa and global agreement for each file. And a data source info tab. 
-	%    							0 if you don't want to write this .xls file.  
+	%		 
 
 
 
@@ -212,10 +211,18 @@ else  % it has been fully scored
 	end
 end
 
+unique_states = unique(SleepState(original_scored_rows));
+if length(unique_states) < 3
+	warning('WARNING: Fewer than three states are present in the training data.')
+end
+
 % MULTIPLE TRIALS
-% use a random percentage of the scored epochs as training data
+% Run it once using all of the scored epochs as training data, 
+% then run it trials.number times using a random percentage 
+% of the scored epochs as training data each time. 
 if trials.number > 1
-	for i=1:trials.number
+	scored_rows{1} = original_scored_rows;
+	for i=2:trials.number+1
 		scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); % replace set to false means I won't get a row repeated
 		tstart = tic;
 		num_REMS_episodes_desired = 10;
@@ -272,7 +279,13 @@ end
 % end
 
 % Do quadratic discriminant analysis to classify each epoch into wake, SWS, or REM using the PCA vectors
-for j=1:trials.number
+	if trials.number >1 
+		M = trials.number +1;
+	else
+		M = trials.number;
+	end
+
+for j=1:M
 	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
 	predicted_sleep_state(find(SleepState==5),j)=5;
 
@@ -359,29 +372,31 @@ if strcmp(method,'NaiveBayes')
 	figure
 	gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
 
-	xl = xlim;
-	yl = ylim;
-	hold on 
-	K = coeff(2,3).const;
-	L = coeff(2,3).linear;
-	%Q = coeff(1,2).quadratic;
-	% Function to compute K + L*v + v'*Q*v for multiple vectors
-	% v=[x;y]. Accepts x and y as scalars or column vectors.
-	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-	set(h2,'Color','r','LineWidth',2)
+	if length(unique_states) >= 3  % if at least three states are present, draw lines on the scatterplot to indicate the states 
+		xl = xlim;
+		yl = ylim;
+		hold on 
+		K = coeff(2,3).const;
+		L = coeff(2,3).linear;
+		%Q = coeff(1,2).quadratic;
+			% Function to compute K + L*v + v'*Q*v for multiple vectors
+		% v=[x;y]. Accepts x and y as scalars or column vectors.
+		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		set(h2,'Color','r','LineWidth',2)
 
-	K = coeff(1,2).const;
-	L = coeff(1,2).linear;
-	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-	set(h2,'Color','k','LineWidth',2)
+		K = coeff(1,2).const;
+		L = coeff(1,2).linear;
+		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		set(h2,'Color','k','LineWidth',2)
 
-	K = coeff(1,3).const;
-	L = coeff(1,3).linear;
-	f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-	h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-	set(h2,'Color','b','LineWidth',2)
+		K = coeff(1,3).const;
+		L = coeff(1,3).linear;
+		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
+		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		set(h2,'Color','b','LineWidth',2)
+	end  % end of check for at least 3 unique states
 end   % end of NaiveBayes if statement
 % Compare human-scored vs computer scored
 figure
@@ -511,8 +526,8 @@ if writefile
 	% date_time = datestr(now,'mm.dd.yyyy.hh.MM');
 	% output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
 	% mkdir(output_directory)
-	write_scored_file(filename,output_directory,predicted_score);
-	%write_scored_file(filename,predicted_score);  %previous version
+	%write_scored_file(filename,output_directory,predicted_score); % previous version
+	write_scored_file_fast(filename,output_directory,predicted_score);  %new version, without needing to click on any windows
 end
 
 
