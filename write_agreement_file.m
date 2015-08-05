@@ -77,5 +77,5 @@ xl.setCells(sheet_params{1},[2,11],trials.fraction_training_data);
 xl.sourceInfo(mfilename('fullpath'));
 xl.rmDefaultSheets();
 
-xl.saveAs('agree_stats.xls',strcat(directory,most_recent_directory,'\'));
+xl.saveAs('agree_stats.xlsx',strcat(directory,most_recent_directory,'\'));
 fclose('all');  %so Excel doesn't think MATLAB st

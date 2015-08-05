@@ -20,7 +20,6 @@ function write_scored_file(filename,directory,predicted_score)
 
 
 
-
 % This is so I can use Jon's stuff 
 %addpath ../../../../../../Brennecke/matlab-pipeline/Matlab/etc/matlab-utils/;
 addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\'

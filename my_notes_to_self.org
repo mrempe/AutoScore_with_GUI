@@ -67,3 +67,31 @@ on my laptop, but said "I wasn't able to assign a score" for every epoch of the 
 I have written a new file write_scored_file_fast.m to write the autoscored file without having to click on the Excel window that asks you if you want to replace the file....
 The good news is that it seems to work and you don't have to do any clicking on windows.  The bad news:  it is much slower than write_scored_file.m which uses XL.m. 
 It relies on dlmcell.m which is from MATLAB central and writes a cell array to a tab-delimited file.  It seems to work, but is slow.  Maybe I can speed it up.  
+I ended up going back to write_scored_file.m.  Mine seemed to work but really it was saved as an excel file with a txt extension (not actually a tab-delimited file) This 
+messed up everything else (SLEEPREPORT, etc.) because it couldn't read the autoscored files as tab delimited.  You can open and re-save those .txt files as tab-delimited, 
+but it is a pain.  I switched it back to write_scored_file.m.  It works, but you have to close a window that pops up for each file.  The issue was the the 
+way write_scored_file.m works, it just copied the existing tab-delimited file and re-wrote one column.  This meant that the final file was also tab-delimited. 
+Apparantly how I was doing it (storing everything in a cell array and writing the entire cell array to a .txt file at once) didn't put the tabs in there. 
+It would be better if XL.m could be updated to modify saveAs to save as different file types (tab-delimited .txt for instance) but for now I'm just leaving it. 
+
+Keep working on PROCESSLBATCHMODE.m in Process_L_with_GUI so the user can choose between the 3-state model and the 5-state model. Also, some of the plotting 
+was looking kind of funny for lactate simulations.  Lots of read circles when it seems like there should be more black and cyan circles sometimes. Keep checking this.
+This was because these files had not been scored yet, so every epoch was assumed to be wake.  We were just trying to see if the lactate signal had good dynamics or 
+not. 
+
+* July 28, 2015
+I've been working on a way to get scoring from a .txt file back into a .zdb file.  The code is in FS1\Rempe\MATLAB\zdb_MATLAB.  The problem is that
+the .zdb file of a partially scored file only has as many elements as there are scored rows.  I need to be able to change the size of the .zdb file
+(which is really just a SQLite 3 database) to put in the new epochs that have scores.  I've been trying to write a new .zdb file from scratch, but 
+I may not be able to get the timestamp and filename and other data in there.  It would be great if I could just add data to the existing .zdb file
+using an INSERT INTO command or something.
+
+Try this next time:  load in the .zdb as I'm doing in zdb_get_score.m.  Then determine the length of the recording from the .txt file. Then 
+fill in the rest of the scores in the .zdb file using a for loop and and INSERT INTO command.  I will need to write not just the score, but also 
+all the other values as well (internal_property,logging_log_entry,scoring_key,temporary_scoring_comment,temporary_scoring_group,temporary_scoring_group_to_comment,
+temporary_scoring_group_to_key,temporary_scoring_key,temporary_scoring_marker,temporary_workspace_workspace,workspace_workspace).
+12:39 I now am able to add the scoring data to the .zdb database, in the sense that it has 6000 rows before I put in the scoring data, and 29112 when I'm finished. 
+This is the correct number of rows, but some things are still not working: the new .zdb file I create is the same size as the original and when I open it in 
+NeuroScore, the scoring is still missing.  I wonder if some other variables need to change for the length of the scoring to change.  I may need to add in 
+a bunch of empty placeholders for the other values?  This seems unlikely because opening the file in NeuroScore shows that it knows how long it is. It just
+doesn't have the scoring for most of it.  

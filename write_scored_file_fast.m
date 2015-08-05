@@ -75,13 +75,25 @@ C=[header_line1; header_line2; text_and_num_data];
 
 
 % write to an excel file using XL.m
-
-xl=XL;
+% If you just call xl=XL; it will assume the file is in xls format and 
+% it will complain when you try to open it. 
+% This also seems to throw off importdatafile.m because it is not really 
+% tab-delimited?  
+% so, create an empty file of the correct name, then open it using XL.m
+% AS of July 17, 2015 this isn't quite working correctly.  
+% Either it saves the file without putting up the dialog window, 
+% but it saves it not really as a .txt file, but rather an .xls file.
+% Or it puts up the window just like write_scored_file.m.  So I'm back to using
+% write_scored_file.m even though you have to click on the button each time. 
+a=find(newfilename=='\');
+fclose(fopen(newfilename,'w'))
+xl=XL(newfilename);
 sheet = xl.Sheets.Item(1);
 [numcols,numrows] = xl.sheetSize(sheet);
 xl.setCells(sheet,[1,1],C);
 
-a=find(newfilename=='\');
+
+
 xl.saveAs(newfilename(a+1:end),newfilename(1:a));
 fclose('all');  %so Excel doesn't think MATLAB still has the file open
 

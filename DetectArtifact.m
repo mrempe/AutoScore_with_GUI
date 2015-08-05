@@ -1,4 +1,7 @@
 function[numArtifact,ArtifactEpochs]=DetectArtifact(FFTData,LactateYesOrNo,statearray,ThreshValue,ThreshText);
+% Copied from C:\Users\wisorlab\Documents\MATLAB\J_Wisor\EpochBasedProcessing\Timed\Excel Export\SleepReport_AnyState\
+% on 7/7/2015.
+%
 %FFTData is the matrix containing FFT data (typically this is called 'data'
 %in SLEEPREPORT.m
 

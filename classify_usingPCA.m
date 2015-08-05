@@ -151,6 +151,7 @@ end
  % Find each row that contains missing EEG or EMG data and mark it as artefact. Then ignore all artefact rows in autoscoring. 
 [rows,cols]=find(isnan(Feature));
 Nan_rows = unique(rows);
+
 %non_artefact_non_missing_epochs = setdiff(1:size(Feature,1),Nan_rows);  %non_artefact_non_missing_epochs has numel= length(Feature)-Nan_rows    
 SleepState(Nan_rows)=5;  % Designate epochs with missing data as artefact 
 
@@ -171,6 +172,9 @@ end
   non_artefact_indices = find(SleepState(:)~=5);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
 
 
+% Set at least one Feature to NaN if an epoch is marked as artefact. This ensures that pca.m will ignore it.
+Feature(find(SleepState(:)==5),1)=NaN;
+
 
 % compute dynamic range
 dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
@@ -185,7 +189,8 @@ end
 scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefact_indices)));
 [Coeff,PCAvectors,latent,tsquared,explained] = pca((2*(Feature)-max(max(Feature)))./scalefactor+1);
 explained
-% PCAvectors is indexed just on the non_artefact_non_missing epochs.  Size should be length(Feature)-Nan_rows
+% PCAvectors is the length of the entire recording (including artifacts and NaNs)
+
 
 
 % Determine if the file has been fully scored or not.
@@ -286,28 +291,32 @@ end
 	end
 
 for j=1:M
-	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
-	predicted_sleep_state(find(SleepState==5),j)=5;
+	
 
  if strcmp(method,'NaiveBayes')
-	 [predicted_sleep_state(non_artefact_indices,j),err,posterior,logp,coeff] = classify(PCAvectors(non_artefact_indices,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
-	 err 
+	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
+	[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	err 
+ 	predicted_sleep_state(find(SleepState==5),j)=5; % reset artifacts epochs back to artifact
  end  
-	%predicted_sleep_state(Nan_rows)=5;  %set all epochs with artefact (or missing data) to 5, not just those in training data
+	
 
 
  if strcmp(method,'RandomForest')
 	
-	B=TreeBagger(50,PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'OOBVarImp','On');  %build 50 bagged decision trees
+	B=TreeBagger(50,PCAvectors(original_scored_rows,1:3),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
+
 	figure
 	plot(oobError(B));
 	xlabel('Number of Grown Trees')
 	ylabel('Out-of-Bag Classification Error')
 	
-	bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));
+	bag_predicted_sleep_state = predict(B,PCAvectors(:,1:3));    %this includes those epochs with NaNs
 	predicted_sleep_state = cell2mat(bag_predicted_sleep_state);
 	predicted_sleep_state = str2num(predicted_sleep_state);
+	predicted_sleep_state(find(SleepState==5)) = 5; % reset artifact epochs back to artifact
  end 
+
 
 
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
@@ -526,8 +535,8 @@ if writefile
 	% date_time = datestr(now,'mm.dd.yyyy.hh.MM');
 	% output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
 	% mkdir(output_directory)
-	%write_scored_file(filename,output_directory,predicted_score); % previous version
-	write_scored_file_fast(filename,output_directory,predicted_score);  %new version, without needing to click on any windows
+	write_scored_file(filename,output_directory,predicted_score); % previous version
+	%write_scored_file_fast(filename,output_directory,predicted_score);  %new version, without needing to click on any windows
 end
 
 
