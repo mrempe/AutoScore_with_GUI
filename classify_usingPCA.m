@@ -143,7 +143,7 @@ end
 	
 if sum(sum(isnan(Feature))) ~=0
 	disp('WARNING: Feature vector contains NaNs.  Missing EEG or EMG data.  Ignoring these epochs.')
-	pause(3)  %pause for a few seconds, so the user sees this message
+	pause(1)  %pause for a few seconds, so the user sees this message
 end
 
  % Feature will contain NaNs if there is missing EEG or EMG data.  
@@ -219,6 +219,7 @@ end
 unique_states = unique(SleepState(original_scored_rows));
 if length(unique_states) < 3
 	warning('WARNING: Fewer than three states are present in the training data.')
+	trials.number =1;  % if there are fewer than 3 states present, don't do multiple trials that require at least some REMS
 end
 
 % MULTIPLE TRIALS

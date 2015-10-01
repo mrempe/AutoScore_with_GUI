@@ -95,3 +95,10 @@ This is the correct number of rows, but some things are still not working: the n
 NeuroScore, the scoring is still missing.  I wonder if some other variables need to change for the length of the scoring to change.  I may need to add in 
 a bunch of empty placeholders for the other values?  This seems unlikely because opening the file in NeuroScore shows that it knows how long it is. It just
 doesn't have the scoring for most of it.  
+
+* Sept. 28, 2015
+I just had a conversation with Janne and skyping with Jelena in Norway. Things to try for the autoscoring method (at least in NB, and maybe RF too)
+1) try 5-9 Hz for Theta.  Jelena uses 6-9 but sometimes 5-8.  I'M CURRENTLY USING 5-9 HZ.
+2) Check agreement for E2742week3 using NB with and without the REMS rescoring rule.  I think the rule may be undoing some epochs that were correctly scored as  REMS. Check specifically a segment around 7:10:30.  It captured the transition from SWS to REMS perfectly, but then it switches to W too soon. 
+3) We developed a new ad-hoc rule: if a segment is scored as REMS and if there is no increase in EMG, continue to score those epochs as REMS until the EMG changes.  Define an EMG change in the following way:  find the average EMG value of all REMS epochs for this animal.  A significant change in EMG is at least one standard deviation (or two, etc.)
+4) AASM defines entry and exit from a REMS episode, and the ending of a REMS episode includes body movement as shown in EMG. 
