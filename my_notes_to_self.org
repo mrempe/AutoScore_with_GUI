@@ -102,3 +102,11 @@ I just had a conversation with Janne and skyping with Jelena in Norway. Things t
 2) Check agreement for E2742week3 using NB with and without the REMS rescoring rule.  I think the rule may be undoing some epochs that were correctly scored as  REMS. Check specifically a segment around 7:10:30.  It captured the transition from SWS to REMS perfectly, but then it switches to W too soon. 
 3) We developed a new ad-hoc rule: if a segment is scored as REMS and if there is no increase in EMG, continue to score those epochs as REMS until the EMG changes.  Define an EMG change in the following way:  find the average EMG value of all REMS epochs for this animal.  A significant change in EMG is at least one standard deviation (or two, etc.)
 4) AASM defines entry and exit from a REMS episode, and the ending of a REMS episode includes body movement as shown in EMG. 
+
+* Oct. 1, 2015
+I turned off the REM rescoring rule for E2742week3 and REM agreement improved only slightly while global and kappa and wake agreement got a bit worse.  
+Let's leave the REM rescoring rule in there for now. 
+
+* Oct. 2, 2015
+I implemented a new REM rescoring rule that keeps scoring epochs as REM until the EMG changes significantly.  This is only done for REMS episodes that are followed by W, not SWS.  This helped only modestly.   REM agreement, global and kappa all improved slightly, but not much.  There must be other issues going on with REMS that make it 
+so it's not scoring well.  

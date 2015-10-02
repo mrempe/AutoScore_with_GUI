@@ -21,7 +21,7 @@ function agreement_stats=PCASCOREBATCHMODE
 
 
 % Pop up a window 
- [files,directory] = uigetfile('Multiselect','on','D:\*.txt','PCASCOREBATCHMODE!  Please select the .txt file(s) you would like to autoscore');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
+ [files,directory] = uigetfile('Multiselect','on','\\FS1\WisorData\*.txt','PCASCOREBATCHMODE!  Please select the .txt file(s) you would like to autoscore');  %last parameter sent to uigetfile ('*.edf*) specifies that only edf files will be displayed in the user interface.
  if ~iscell(files), files = {files}; end
 % files = 'BA1214_Training.txt';
 % files = {files};

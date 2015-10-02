@@ -36,10 +36,10 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 
 
 
-rescore_REM_in_wake =1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
+rescore_REM_in_wake = 1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
                          % Set this to 0 if you have data from narcolepsy, sleep apnea or some other condition where REM 
                          % episodes can happen in the middle of a wake bout.
-
+rescore_REM_using_EMG=1;
 
 if nargin==3
 	training_start=[];training_end=[]; writefile=0; 
@@ -320,6 +320,10 @@ for j=1:M
 
 
 
+
+
+	% --- RESCORE REMS if Preceeded by WAKE ---
+	%
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
 	REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
@@ -344,6 +348,13 @@ for j=1:M
 	   		end
 		end
 	end
+
+
+	if rescore_REM_using_EMG
+		% --- If a REM episode ends without the EMG changing, extend it until EMG changes --
+		predicted_sleep_state=rescoreREM_usingEMG(Feature,predicted_sleep_state);  
+	end
+
 
 
 
