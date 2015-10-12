@@ -108,5 +108,21 @@ I turned off the REM rescoring rule for E2742week3 and REM agreement improved on
 Let's leave the REM rescoring rule in there for now. 
 
 * Oct. 2, 2015
-I implemented a new REM rescoring rule that keeps scoring epochs as REM until the EMG changes significantly.  This is only done for REMS episodes that are followed by W, not SWS.  This helped only modestly.   REM agreement, global and kappa all improved slightly, but not much.  There must be other issues going on with REMS that make it 
-so it's not scoring well.  
+I implemented a new REM rescoring rule that keeps scoring epochs as REM until the EMG changes significantly.  This is only done for REMS episodes that are followed by W, not SWS.  This helped only modestly.   REM agreement, global and kappa all improved slightly, but not much.  There must be other issues going on with REMS that make it so it's not scoring well.  
+
+* Oct. 7, 2015
+I'm trying to scale all the data so each column is between 0 and 1 to see if that helps it use EMG as more of a variable.  
+12:00: my first stab at normalizing Feature vector (after smoothing) gave me worse agreement as measured by the "explained" output. Now 6 out of the 7 
+dimensions are needed, rather than 3.  However, when I do the classification using these PCA vectors, the agreement is much better, particularly for REM. 
+kappa goes up to .8914 and REM agreement goes up to .6962 (up from .2152)  This is without either REM rescoring rule.  
+
+2:40: Running it on the week 3 EGR3 data using both REM rules gave very good agreement.  I checked E2742week3 and there are still some REM epochs that are 
+not extended far enough.  For one such case the REM segment is only 3 epochs long and the EMG is remarkably stable during those 3 epochs.  Then it jumps 
+a bit in the next epoch.  For this case the std is very small, so even a small jump means it is more than one SD and it does not invoke the new REM rescoring rule.  
+
+3:30: One problem: for File EGR3_E2745_Lactate_05_21_2015_M_KO.txt two of the lines drawn by NB to separate regions overlap, so no epochs get scored as REMS, 
+even though some were scored as REMS in the training data. This gives a REM agreement of 0, but kappa is still higher than it was before.  The code runs 
+now, but for that file it does not score any epochs as REM, so REM agreement is 0 and kappa and global are only OK.  
+
+3:56: I re-ran the tricky files from EGR3 lactate and the agreement is a little better than it was before, but not great.  Results stored in agree_stats_NB_scaled.xlsx. 
+

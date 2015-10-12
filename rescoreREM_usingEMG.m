@@ -42,12 +42,14 @@ function NewSleepState = rescoreREM_usingEMG(Feature,SleepState)
 	for i=1:size(runs,1)
 		EMG_avg_for_REM_run = mean(EMG(runs(i,1):runs(i,2)));
 		std_for_REM_run = std(EMG(runs(i,1):runs(i,2)));
-		if SleepState(runs(i,2)+1)==0  % if the REM streak ends with Wake
-			j=i;
-			while (runs(i)+j < length(EMG) & SleepState(runs(i)+j) ~= 1 & (EMG(runs(i)+j) ) < EMG_avg_for_REM_run + 1*std_for_REM_run)
-				disp('rescoreREM_usingEMG rescored an epoch to REM')
-				SleepState(runs(i)+j) = 2;
-				j=j+1;
+		if runs(i,2) < size(SleepState,1)  % it doesn't matter if the last epoch is REMS
+			if SleepState(runs(i,2)+1)==0  % if the REM streak ends with Wake
+				j=i;
+				while (runs(i)+j < length(EMG) & SleepState(runs(i)+j) ~= 1 & (EMG(runs(i)+j) ) < EMG_avg_for_REM_run + 1*std_for_REM_run)
+					disp('rescoreREM_usingEMG rescored an epoch to REM')
+					SleepState(runs(i)+j) = 2;
+					j=j+1;
+				end
 			end
 		end
 	end

@@ -35,7 +35,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 
 
 
-
+normalize = 1;  % FLAG to normalize the data in the feature matrix to the max and min of each feature, so each column have values between 0 and 1. 
 rescore_REM_in_wake = 1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
                          % Set this to 0 if you have data from narcolepsy, sleep apnea or some other condition where REM 
                          % episodes can happen in the middle of a wake bout.
@@ -190,7 +190,15 @@ scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefa
 [Coeff,PCAvectors,latent,tsquared,explained] = pca((2*(Feature)-max(max(Feature)))./scalefactor+1);
 explained
 % PCAvectors is the length of the entire recording (including artifacts and NaNs)
-
+if normalize
+	column_maxs = max(Feature,[],1);
+	column_mins = min(Feature,[],1);
+	for i=1:7
+		Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
+	end
+	[Coeff,PCAvectors,latent,tsquared,explained] = pca(Feature_Scaled);
+	explained
+end
 
 
 % Determine if the file has been fully scored or not.
@@ -350,9 +358,9 @@ for j=1:M
 	end
 
 
-	if rescore_REM_using_EMG
+	if rescore_REM_using_EMG & length(find(predicted_sleep_state(:,j)==2)) > 0
 		% --- If a REM episode ends without the EMG changing, extend it until EMG changes --
-		predicted_sleep_state=rescoreREM_usingEMG(Feature,predicted_sleep_state);  
+		predicted_sleep_state(:,j)=rescoreREM_usingEMG(Feature,predicted_sleep_state(:,j));  
 	end
 
 
