@@ -36,6 +36,7 @@ function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SW
 
 
 normalize = 1;  % FLAG to normalize the data in the feature matrix to the max and min of each feature, so each column have values between 0 and 1. 
+				% Now this also divides by the standard deviation, making the data z-scores
 rescore_REM_in_wake = 1;  % FLAG.  If =1, then each epoch scored as REM preceeded by 30 seconds of wake will be rescored as wake. 
                          % Set this to 0 if you have data from narcolepsy, sleep apnea or some other condition where REM 
                          % episodes can happen in the middle of a wake bout.
@@ -181,9 +182,18 @@ dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_in
 
 
 % Smoothing
-for i=1:7
+for i=[1:4, 6:7]
 	Feature(non_artefact_indices,i)=medianfiltervectorized(Feature(non_artefact_indices,i),2);
 end
+
+
+ % TESTING:  make a plot of eigenvectors to see which components are important
+ % CovMat = cov(Feature);
+ % [V,D]=eigs(CovMat,3);
+ % figure
+ % imagesc(V)
+ % pause
+
 
 % Compute the Principal Components
 scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefact_indices)));
@@ -191,10 +201,13 @@ scalefactor = max(max(Feature(non_artefact_indices)))-min(min(Feature(non_artefa
 explained
 % PCAvectors is the length of the entire recording (including artifacts and NaNs)
 if normalize
-	column_maxs = max(Feature,[],1);
-	column_mins = min(Feature,[],1);
+	column_maxs  = max(Feature,[],1);
+	column_mins  = min(Feature,[],1);
+	column_means = mean(Feature,1);
+	column_SDs   = std(Feature,0,1);
 	for i=1:7
-		Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
+		%Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
+		Feature_Scaled(:,i) = (Feature(:,i)-column_means(i))./column_SDs(i);
 	end
 	[Coeff,PCAvectors,latent,tsquared,explained] = pca(Feature_Scaled);
 	explained
@@ -305,6 +318,7 @@ for j=1:M
  if strcmp(method,'NaiveBayes')
 	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
 	[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	%[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'quadratic','empirical');  % Naive Bayes
 	err 
  	predicted_sleep_state(find(SleepState==5),j)=5; % reset artifacts epochs back to artifact
  end  
@@ -313,7 +327,8 @@ for j=1:M
 
  if strcmp(method,'RandomForest')
 	
-	B=TreeBagger(50,PCAvectors(original_scored_rows,1:3),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
+	%B=TreeBagger(50,PCAvectors(original_scored_rows,1:3),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
+	B=TreeBagger(50,Feature_Scaled(original_scored_rows,:),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
 
 	figure
 	plot(oobError(B));
@@ -334,7 +349,7 @@ for j=1:M
 	%
 	% if there are REM epochs preceeded by 30 seconds or more of contiguous wake 
 	% re-score the REM epoch as wake
-	REM_window_length = 30; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
+	REM_window_length = 60; %seconds.  If there are REM_window_length seconds of contiguous wake preceeding an epoch scored as REMS, change that REM epoch to wake
 	epochs_in_REM_window = round(REM_window_length/epoch_length_in_seconds); 
 	REM_locs = [];
 	REM_rescore_counter=0;
@@ -362,6 +377,10 @@ for j=1:M
 		% --- If a REM episode ends without the EMG changing, extend it until EMG changes --
 		predicted_sleep_state(:,j)=rescoreREM_usingEMG(Feature,predicted_sleep_state(:,j));  
 	end
+
+
+
+
 
 
 
@@ -401,44 +420,73 @@ if strcmp(method,'NaiveBayes')
 	figure
 	gscatter(PCAvectors(scored_rows{best_trial},1),PCAvectors(scored_rows{best_trial},2),SleepState(scored_rows{best_trial}),[1 0 0; 0 0 1; 1 .5 0],'osd');
 
+
 	if length(unique_states) >= 3  % if at least three states are present, draw lines on the scatterplot to indicate the states 
-		xl = xlim;
-		yl = ylim;
-		hold on 
-		K = coeff(2,3).const;
-		L = coeff(2,3).linear;
-		%Q = coeff(1,2).quadratic;
-			% Function to compute K + L*v + v'*Q*v for multiple vectors
-		% v=[x;y]. Accepts x and y as scalars or column vectors.
-		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-		set(h2,'Color','r','LineWidth',2)
+		
+		% Uncomment the next 11 lines if you want to make a plot with the different classes shaded 
+		% xl = xlim;
+		% yl = ylim;
+		% hold on 
+		 
+		% % New idea: shade (sort of) the parts of the plot
+		% [X,Y]=meshgrid(linspace(xl(1),xl(2)),linspace(yl(1),yl(2)));
+		% %[X,Y,Z]=meshgrid(linspace(xl(1),xl(2)),linspace(yl(1),yl(2)),linspace(min(PCAvectors(:,3)),max(PCAvectors(:,3))));
+		% X = X(:); Y=Y(:); %Z=Z(:);
+		% %[C,err_all,Pall,logp_all,coeff_mesh] = classify([X Y Z],PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'quadratic','empirical');
+		% [C,err_all,Pall,logp_all,coeff_mesh] = classify([X Y],PCAvectors(scored_rows{j},1:2),SleepState(scored_rows{j}),'diaglinear','empirical');
+		% gscatter(X,Y,C,[1 0 0; 0 0 1; 1 .5 0],'osd',1,'off');
 
-		K = coeff(1,2).const;
-		L = coeff(1,2).linear;
-		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-		set(h2,'Color','k','LineWidth',2)
 
-		K = coeff(1,3).const;
-		L = coeff(1,3).linear;
-		f = @(x1,x2) K + L(1)*x1+L(2)*x2; %+ sum(([x y]*Q) .* [x y], 2);
-		h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
-		set(h2,'Color','b','LineWidth',2)
+
+		% K = coeff(2,3).const;
+		% L = coeff(2,3).linear;
+		% try
+		% 	Q = coeff(2,3).quadratic;
+		% catch ME 
+		% 	Q=zeros(3);
+		% end
+		% 	% Function to compute K + L*v + v'*Q*v for multiple vectors
+		% % v=[x;y]. Accepts x and y as scalars or column vectors.
+		% f = @(x1,x2) K + L(1)*x1+L(2)*x2 + sum(([x1 x2]*Q) .* [x1 x2], 2);
+		% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		% set(h2,'Color','r','LineWidth',2)
+
+		% K = coeff(1,2).const;
+		% L = coeff(1,2).linear;
+		% try
+		% 	Q = coeff(1,2).quadratic;
+		% catch ME 
+		% 	Q=zeros(3);
+		% end
+		% f = @(x1,x2) K + L(1)*x1+L(2)*x2 + sum(([x1 x2]*Q) .* [x1 x2], 2);
+		% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		% set(h2,'Color','k','LineWidth',2)
+
+		% K = coeff(1,3).const;
+		% L = coeff(1,3).linear;
+		% try
+		% 	Q = coeff(1,3).quadratic;
+		% catch ME 
+		% 	Q=zeros(3);
+		% end
+		% f = @(x1,x2) K + L(1)*x1+L(2)*x2 + sum(([x1 x2]*Q) .* [x1 x2], 2);
+		% h2 = ezplot(f,[xl(1) xl(2) yl(1) yl(2)]);
+		% set(h2,'Color','b','LineWidth',2)
 	end  % end of check for at least 3 unique states
 end   % end of NaiveBayes if statement
 % Compare human-scored vs computer scored
 figure
+circle_size = 0.1;
 subplot(1,2,1)
 % grouping
 wake_locs_human = find(SleepState==0);
 SWS_locs_human  = find(SleepState==1);
 REM_locs_human  = find(SleepState==2);
-wake_scatter_human = transparentScatter(PCAvectors(wake_locs_human,1),PCAvectors(wake_locs_human,2),0.01,0.05);
+wake_scatter_human = transparentScatter(PCAvectors(wake_locs_human,1),PCAvectors(wake_locs_human,2),circle_size,0.05);
 set(wake_scatter_human,'FaceColor',[1,0,0]);
-SWS_scatter_human = transparentScatter(PCAvectors(SWS_locs_human,1),PCAvectors(SWS_locs_human,2),0.01,0.05);
+SWS_scatter_human = transparentScatter(PCAvectors(SWS_locs_human,1),PCAvectors(SWS_locs_human,2),circle_size,0.05);
 set(SWS_scatter_human,'FaceColor',[0,0,1]);
-REM_scatter_human = transparentScatter(PCAvectors(REM_locs_human,1),PCAvectors(REM_locs_human,2),0.01,0.05);
+REM_scatter_human = transparentScatter(PCAvectors(REM_locs_human,1),PCAvectors(REM_locs_human,2),circle_size,0.05);
 set(REM_scatter_human,'FaceColor',[1,0.5,0]);
 %gscatter(PCAvectors(:,1),PCAvectors(:,2),SleepState,[1 0 0; 0 0 1; 1 .5 0],'osd');
 %scatterhist(PCAvectors(:,1),PCAvectors(:,2),'Group',SleepState,'Color','rbk')
@@ -455,11 +503,11 @@ subplot(1,2,2)
 wake_locs_machine = find(predicted_sleep_state==0);
 SWS_locs_machine  = find(predicted_sleep_state==1);
 REM_locs_machine  = find(predicted_sleep_state==2);
-wake_scatter_machine = transparentScatter(PCAvectors(wake_locs_machine,1),PCAvectors(wake_locs_machine,2),0.01,0.05);
+wake_scatter_machine = transparentScatter(PCAvectors(wake_locs_machine,1),PCAvectors(wake_locs_machine,2),circle_size,0.05);
 set(wake_scatter_machine,'FaceColor',[1,0,0]);
-SWS_scatter_machine = transparentScatter(PCAvectors(SWS_locs_machine,1),PCAvectors(SWS_locs_machine,2),0.01,0.05);
+SWS_scatter_machine = transparentScatter(PCAvectors(SWS_locs_machine,1),PCAvectors(SWS_locs_machine,2),circle_size,0.05);
 set(SWS_scatter_machine,'FaceColor',[0,0,1]);
-REM_scatter_machine = transparentScatter(PCAvectors(REM_locs_machine,1),PCAvectors(REM_locs_machine,2),0.01,0.05);
+REM_scatter_machine = transparentScatter(PCAvectors(REM_locs_machine,1),PCAvectors(REM_locs_machine,2),circle_size,0.05);
 set(REM_scatter_machine,'FaceColor',[1,0.5,0]);
 % gscatter(PCAvectors(:,1),PCAvectors(:,2),predicted_sleep_state,[1 0 0; 0 0 1; 1 .5 0],'osd');
 xlabel('PC1')

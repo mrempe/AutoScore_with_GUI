@@ -3,7 +3,13 @@ function NewSleepState = rescoreREM_usingEMG(Feature,SleepState)
 	% usage: NewSleepState =rescoreREM_usingEMG(Feature,SleepState) 
 	%
 	%
-	% This function handles the case where a REMS episode isn't scored as such long enough
+	% This function handles the case where a REMS episode isn't scored as such long enough.
+	% It looks at each run of REMS that is followed by Wake and continues REMS until there is 
+	% a significant change in the EMG (denoting wake).
+
+
+	% Part 2: 
+	% If any epoch is scored as R or S, but the EMG is large there, rescore that epoch as W
 
 
 
@@ -55,4 +61,21 @@ function NewSleepState = rescoreREM_usingEMG(Feature,SleepState)
 	end
 
 NewSleepState = SleepState;
+
+
+
+% NEW REM rescoring rule:
+% Find all epochs marked as R or S. If the EMG is high in these epochs, re-score them as W
+% meanEMG = mean(EMG)
+% medianEMG = median(EMG)
+% std(EMG)
+% EMG(5883:5886)  %5884 should be .7786
+
+% RorSepochs = find(SleepState==1 | SleepState==2);
+% for i=1:length(RorSepochs)
+% 	if EMG(RorSepochs(i)) > meanEMG
+% 		SleepState(RorSepochs(i))=0;  % Set this epoch to W
+% 		disp('new EMG rule: If EMG is high, rescore as W')
+% 	end
+% end
 

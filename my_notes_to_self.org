@@ -126,3 +126,19 @@ now, but for that file it does not score any epochs as REM, so REM agreement is 
 
 3:56: I re-ran the tricky files from EGR3 lactate and the agreement is a little better than it was before, but not great.  Results stored in agree_stats_NB_scaled.xlsx. 
 
+* Oct. 12, 2015
+To improve REM scoring:  Janne sent me a paper (Frandsen_et_al_2015JSR) where they automated REM sleep detection.  One of the things they used was an amplitude curve:  The used a moving 51-sample window (how many seconds?, what frequency?) For each progression of the moving window the amplitude was determined as the difference between the highest and lowest value in the entire window.  This seems to give a nice measure of EMG actitivity and then they describe various methods to determine (using this measure) when REMS is happening.  Baseline was measured, etc.  This may be helpful in determining when a REMS episode ends.  It seems to be a good way to capture the little blip that happens in the EMG when REMS goes to WAKE.  Try this sliding window idea on my method, but I will probably need to use the .edf file instead of .txt.  Or maybe I can make NeuroScore output something like this.  
+Also try Hans' idea of power spectrum and slope.  
+
+
+* Oct. 19, 2015
+I figured out why autoscoring was not doing a good job of catching blips in the EMG that should signify one epoch of W.  I was smoothing the data (including EMG) before I did anything with it and that got rid of all those one-epoch blips.  I have turned off smoothing now, and the REM agreement goes down significantly, but the REMS episodes that Janne told me to check are now scored correctly.  
+Try smoothing all EEG signals, but not EMG signal.  This looks very promising.  For the file E2851 Baseline it captured all of the R-W-S transitions that Janne pointed out and the REM agreement was .8692 with the training data.  Global and kappa were very high when comparing to the file that Janne rescored.    
+
+Smoothing looks really good on Feature(:,1) which is delta power.
+Smoothing looks really good on Feature(:,2) which is theta power.
+Smoothing looks really good on Feature(:,3) which is low beta power.
+Smoothing looks really good on Feature(:,4) which is high beta power.
+
+
+The question is whether 1-epoch blips in any of these signals should signify a change in state.  For EMG, it is fairly common for the EMG signal to be much larger in one epoch than it was in the epoch before or after and this is easily seen when visually scoring.  So it would be easy to score this as Wake (visually).  So the EMG signal should probably not be smoothed.  However, can one tell visually if the power in one frequency band changes in one epoch?  It may make more sense to smooth those and visually you wouldn't see changes that only last one epoch anyway.  
