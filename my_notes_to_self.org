@@ -142,3 +142,7 @@ Smoothing looks really good on Feature(:,4) which is high beta power.
 
 
 The question is whether 1-epoch blips in any of these signals should signify a change in state.  For EMG, it is fairly common for the EMG signal to be much larger in one epoch than it was in the epoch before or after and this is easily seen when visually scoring.  So it would be easy to score this as Wake (visually).  So the EMG signal should probably not be smoothed.  However, can one tell visually if the power in one frequency band changes in one epoch?  It may make more sense to smooth those and visually you wouldn't see changes that only last one epoch anyway.  
+
+3:08: Talking with Janne: this is nearly good enough.  One transition that it is still having a bit of a hard time with is REMS to Wake.  Janne would say that several times there should be one epoch of W after a REMS episode, but the algorithm went straight to SWS.  I changed the medianfilter to use 4 epochs in each direction instead of 2, and that made things a bit worse for the REM-W-S transitions.  But, Janne said that this only happened in 3 out of 17 occurences. 
+
+I re-ran the autoscoring algorithm for file E2792 (which Janne said was one that was tricky) and kappa=0.8774, GA=0.9336, REM=0.5974.  I think this is an improvement over what I was doing before.  

@@ -181,7 +181,7 @@ Feature(find(SleepState(:)==5),1)=NaN;
 dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
 
 
-% Smoothing
+% Smoothing  Don't smooth the EMG signal because you loose one-epoch segments of W
 for i=[1:4, 6:7]
 	Feature(non_artefact_indices,i)=medianfiltervectorized(Feature(non_artefact_indices,i),2);
 end
@@ -203,12 +203,14 @@ explained
 if normalize
 	column_maxs  = max(Feature,[],1);
 	column_mins  = min(Feature,[],1);
-	column_means = mean(Feature,1);
-	column_SDs   = std(Feature,0,1);
+	column_means = mean(Feature,1,'omitnan');
+	column_SDs   = std(Feature,0,1,'omitnan');
 	for i=1:7
 		%Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
 		Feature_Scaled(:,i) = (Feature(:,i)-column_means(i))./column_SDs(i);
 	end
+	max(Feature_Scaled)
+	min(Feature_Scaled)
 	[Coeff,PCAvectors,latent,tsquared,explained] = pca(Feature_Scaled);
 	explained
 end
@@ -327,8 +329,8 @@ for j=1:M
 
  if strcmp(method,'RandomForest')
 	
-	%B=TreeBagger(50,PCAvectors(original_scored_rows,1:3),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
-	B=TreeBagger(50,Feature_Scaled(original_scored_rows,:),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
+	B=TreeBagger(50,PCAvectors(original_scored_rows,1:3),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
+	%B=TreeBagger(50,Feature_Scaled(original_scored_rows,:),SleepState(original_scored_rows),'OOBVarImp','On');  %build 50 bagged decision trees
 
 	figure
 	plot(oobError(B));
