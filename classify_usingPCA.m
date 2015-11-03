@@ -95,7 +95,7 @@ end
      	SleepState(i)=8;                 
      elseif textdata{i,2}=='W'           % 0=Wake,1=SWS,2=REM, 5=artefact,
      	SleepState(i)=0;
-     elseif textdata{i,2}=='S'
+     elseif textdata{i,2}=='S' | textdata{i,2}=='NR'
      	SleepState(i)=1;
      elseif textdata{i,2}=='P'
      	SleepState(i)=2;
@@ -118,6 +118,16 @@ end
 	  
 
 
+% TESTING:
+% Check individual epochs for Feature and PCA to see why they are getting scored incorrectly.
+%time_of_interest = 
+location_of_interest = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==48 & [TimeStampMatrix(:).Second]==0);
+location_of_interest = location_of_interest(1);   % I only want the first instance of this time.
+
+
+
+
+
 
 
 
@@ -137,11 +147,13 @@ end
 	   Feature(:,1) = sum(data(:,delta_columns),2);	%delta
 	   Feature(:,2) = sum(data(:,theta_columns),2);	%theta
 	   Feature(:,3) = sum(data(:,low_beta_columns),2);	%low beta
-	   Feature(:,4) = sum(data(:,high_beta_columns),2);	%high beta
+	   Feature(:,4) = sum(data(:,high_beta_columns),2);	%high beta 
 	   Feature(:,5) = data(:,EMG_column);				%EMG
 	   Feature(:,6) = Feature(:,2)./Feature(:,1);
 	   Feature(:,7) = sum(data(:,beta_columns),2)./Feature(:,1);
 	
+
+
 if sum(sum(isnan(Feature))) ~=0
 	disp('WARNING: Feature vector contains NaNs.  Missing EEG or EMG data.  Ignoring these epochs.')
 	pause(1)  %pause for a few seconds, so the user sees this message
@@ -181,10 +193,15 @@ Feature(find(SleepState(:)==5),1)=NaN;
 dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
 
 
+
+
+
+
+
 % Smoothing  Don't smooth the EMG signal because you loose one-epoch segments of W
-for i=[1:4, 6:7]
-	Feature(non_artefact_indices,i)=medianfiltervectorized(Feature(non_artefact_indices,i),2);
-end
+% for i=[1:4, 6:7]
+% 	Feature(non_artefact_indices,i)=medianfiltervectorized(Feature(non_artefact_indices,i),10);
+% end
 
 
  % TESTING:  make a plot of eigenvectors to see which components are important
@@ -209,11 +226,19 @@ if normalize
 		%Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
 		Feature_Scaled(:,i) = (Feature(:,i)-column_means(i))./column_SDs(i);
 	end
-	max(Feature_Scaled)
-	min(Feature_Scaled)
+	for i=[1:4, 6:7]
+ 		Feature_Scaled(non_artefact_indices,i)=medianfiltervectorized(Feature_Scaled(non_artefact_indices,i),2);
+	end
+
 	[Coeff,PCAvectors,latent,tsquared,explained] = pca(Feature_Scaled);
 	explained
 end
+
+disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
+disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
+disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
+pause
+
 
 
 % Determine if the file has been fully scored or not.
@@ -271,6 +296,23 @@ else
 end
 
 
+% TESTING:
+
+% disp('pca vector at 1263:')
+% PCAvectors(scored_rows{1}(1263),:)
+% PCAvectors(scored_rows{1}(1264),:)
+% PCAvectors(scored_rows{1}(353),:)
+% PCAvectors(scored_rows{1}(729),:)
+% pause
+
+% disp('timestamps for these epochs:')
+% TimeStampMatrix(scored_rows{1}(1263))
+% TimeStampMatrix(scored_rows{1}(1264))
+% TimeStampMatrix(scored_rows{1}(353))
+% TimeStampMatrix(scored_rows{1}(729))
+% pause
+
+
 % if already_scored_by_human
 % 	% --- use the data from 10AM to 2PM as training data
 % 	% Find the first instance of 10AM in the data
@@ -319,7 +361,7 @@ for j=1:M
 
  if strcmp(method,'NaiveBayes')
 	predicted_sleep_state(:,j) = 11*ones(size(SleepState));
-	[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diaglinear','empirical');  % Naive Bayes
+	[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'diagquadratic','empirical');  % Naive Bayes
 	%[predicted_sleep_state(:,j),err,posterior,logp,coeff] = classify(PCAvectors(:,1:3),PCAvectors(scored_rows{j},1:3),SleepState(scored_rows{j}),'quadratic','empirical');  % Naive Bayes
 	err 
  	predicted_sleep_state(find(SleepState==5),j)=5; % reset artifacts epochs back to artifact
@@ -378,6 +420,7 @@ for j=1:M
 	if rescore_REM_using_EMG & length(find(predicted_sleep_state(:,j)==2)) > 0
 		% --- If a REM episode ends without the EMG changing, extend it until EMG changes --
 		predicted_sleep_state(:,j)=rescoreREM_usingEMG(Feature,predicted_sleep_state(:,j));  
+		%find(TimeStampMatrix==datetime(2015,8,13,01,43,30))
 	end
 
 

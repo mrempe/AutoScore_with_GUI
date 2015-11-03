@@ -146,3 +146,33 @@ The question is whether 1-epoch blips in any of these signals should signify a c
 3:08: Talking with Janne: this is nearly good enough.  One transition that it is still having a bit of a hard time with is REMS to Wake.  Janne would say that several times there should be one epoch of W after a REMS episode, but the algorithm went straight to SWS.  I changed the medianfilter to use 4 epochs in each direction instead of 2, and that made things a bit worse for the REM-W-S transitions.  But, Janne said that this only happened in 3 out of 17 occurences. 
 
 I re-ran the autoscoring algorithm for file E2792 (which Janne said was one that was tricky) and kappa=0.8774, GA=0.9336, REM=0.5974.  I think this is an improvement over what I was doing before.  
+
+I fixed a small bug in the code that computes PCA using the normalized features.  Mean and std would return NaN if there was a NaN in one of the features.  Now they are called with the 'omitnan' option. 
+
+I re-ran the autoscoring on EGR3_E2753_Lactate_05_24_2015_F_WT.txt and the results aren't much better: kappa=0.6971, GA=0.8328, REM=0.6009.  
+
+* Wednesday, Oct. 21, 2015
+I met with Janne today to talk about epochs that the autoscoring mis-scored.  For one two-epoch sequence, when we look at it in Neuroscore, theta power goes way up (04:50:40) from the first epoch to the second, but in the .txt file, the change is very modest (3109 to 3205).  Is there something wrong with how Neuroscore is outputing the data, or how it visualizes the data in the power bands? CHECK THIS IN NEUROSCORE!
+
+One big issue seems to be smoothing.  Looking at this chunk (04:50:40) instead of going up slightly (before smoothing) it goes down slightly (after smoothing).
+Smoothing with a wider filter (8) seems to make the PCA plot less overlapping.  
+
+Smoothing makes a huge difference: removing smoothing makes REM agreement go to 0.0299 for E2792week2.  Try smoothing after I convert the data to z-scores.
+This helped quite a bit to smooth after converting to z-scores rather than before.  REM agreement and kappa went up in this case.    
+
+Could also try keeping more of the PCAs.  Maybe 4 or 5 instead of 3.  After normalizing, PCA doesn't seem to compress the data too much.  
+
+* Thursday, Oct. 22, 2015
+I tried using diagquadratic instead of diaglinear for the classify.m  (diag is needed for it to truly be Naive Bayes)  The agreement was slighly better using diagquadratic, but REM was quite a bit better.  Check the .txt file and/or .zdb.  
+
+* Wednesday, Oct. 28, 2015
+Janne can get some human polysomnography data, but she wanted me to check the other classifiers that are out there.  I have found a few papers (saved on UltraRoss 
+in Matlab\mrempe\papers\autoscoring) and they use similar features.  
+
+* Thursday, Oct. 29, 2015
+I ran Naive Bayes on E2792week2 and checked all of the issues that Janne originally pointed out.  Nearly all of them are perfect, but the one W epoch after a long R segment is still not quite right in 2 or 3 instances.  R agreement was .7836 and Kappa=.8865 without doing random subsets of the training data.  When I ran it using random subsets of the training data the agreement improved to R=0.8116 and kappa=0.8996.  I ran it again with a random subset (10 trials, 0.5 of training data) and agreement was even better: R=0.85, kappa=0.9040.  
+
+I met with Janne and almost everything looks great.  Try the same version of the code on E3034week2. (I did this file and the agreement was really good) I also tried autoscoring E2792week2 with EMG measured as relative time above a threshold using the Peak feature.  But agreement was about the same and it messed up the REMS episode at 04:50:40.  
+
+* Friday, Oct. 30, 2015
+I ran the autoscoring on the next 3 files Janne sent me.  It did pretty well on them, but REM was sometimes not great.  Then I ran it using 10 trials of 50% of training data and that really improved the agreement.  

@@ -48,16 +48,39 @@ function NewSleepState = rescoreREM_usingEMG(Feature,SleepState)
 	for i=1:size(runs,1)
 		EMG_avg_for_REM_run = mean(EMG(runs(i,1):runs(i,2)));
 		std_for_REM_run = std(EMG(runs(i,1):runs(i,2)));
-		if runs(i,2) < size(SleepState,1)  % it doesn't matter if the last epoch is REMS
+		if runs(i,1) ~= runs(i,2) & runs(i,2) < size(SleepState,1)  % if REMS episode is more than one epoch (and it's not at end of recording)
 			if SleepState(runs(i,2)+1)==0  % if the REM streak ends with Wake
-				j=i;
-				while (runs(i)+j < length(EMG) & SleepState(runs(i)+j) ~= 1 & (EMG(runs(i)+j) ) < EMG_avg_for_REM_run + 1*std_for_REM_run)
+				j=1;  %was j=i;
+				while (runs(i,2)+j < length(EMG) & SleepState(runs(i,2)+j) ~= 1 & (EMG(runs(i,2)+j) ) < EMG_avg_for_REM_run + 1*std_for_REM_run)
 					disp('rescoreREM_usingEMG rescored an epoch to REM')
-					SleepState(runs(i)+j) = 2;
+					SleepState(runs(i,2)+j) = 2;
 					j=j+1;
 				end
 			end
 		end
+	
+		% Now do the case where the REMS episode is only one epoch long.  
+		if runs(i,1) == runs(i,2) & runs(i,2) < size(SleepState,1)   %runs of only 1 epoch, not last epoch
+			if SleepState(runs(i,2)+1)==0   %if the next epoch is Wake 
+				j=1;
+				while runs(i,2)+j < length(EMG) & SleepState(runs(i,2)+j) ~= 1 & EMG(runs(i,2)+j) < 1.5*EMG(runs(i,2))  % while not at end of recording, 
+																														% next epoch isn't SWS, and EMG
+																														% hasn't risen much since its value
+																														% in the one REMS epoch (this handles 
+																														% the case where one REMS epoch is 
+																														% followed immediately by a legitimate 
+																														% Wake epoch)  
+					
+					SleepState(runs(i,2)+j) = 2;
+					j=j+1;
+				end
+			end
+		end
+
+
+
+
+
 	end
 
 NewSleepState = SleepState;
