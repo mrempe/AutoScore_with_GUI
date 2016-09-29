@@ -16,12 +16,47 @@ function kappa=compute_kappa(v1,v2)
 	% Case where v1 and v2 contain letters
 	if iscell(v1) & iscell(v2)
 	
+		% remove white space
+		v1 = strtrim(v1);
+		v2 = strtrim(v2);
+
 		% check to see if there are any empty cells
 		emptycells1 = cellfun(@isempty,v1);
 	 	emptycells2 = cellfun(@isempty,v2);
-		if sum(emptycells1) > 0 | emptycells2 > 0
-			error('One or both of the files contains unscored epochs')
+		if sum(emptycells1) > 0
+			%error('One or both of the files contains unscored epochs')
+			warning(['first file contains ', num2str(sum(emptycells1)), ' empty cells. Filling them with W'])
+			%v1{find(emptycells1),2}='W';
+			ix = cellfun('isempty',v1);
+			v1(ix) = {'W'};
 		end
+		if  sum(emptycells2) > 0
+			warning(['second file contains ', num2str(sum(emptycells2)), ' empty cells. Filling them with W'])
+			%v2{find(emptycells2),2}='W';
+			ix = cellfun('isempty',v2);
+			v2(ix) = {'W'};
+		end
+
+		% Replace 'NR' with 'S' so the lengths of the matrices don't get messed up
+		v1 = strrep(v1,'NR','S');
+		v2 = strrep(v2,'NR','S');
+
+
+	v1 = strrep(v1,'W-X','X');
+	v2 = strrep(v2,'W-X','X');
+
+	v1 = strrep(v1,'N-X','X');
+	v2 = strrep(v2,'N-X','X');
+
+	v1 = strrep(v1,'S-X','X');
+	v2 = strrep(v2,'S-X','X');
+
+	v1 = strrep(v1,'R-X','X');
+	v2 = strrep(v2,'R-X','X');
+
+	v1 = strrep(v1,'U','W');
+	v2 = strrep(v2,'U','W');
+
 
 
 		v1 = cell2mat(v1);

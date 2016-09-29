@@ -113,6 +113,7 @@ elseif length(files) > 1
 	'plotstyle','compact','boxstyle','filled','colors','rb');
 	ax=gca();
 	set(ax,'YGrid','on')
+	grid minor 
 	dir_in_title=regexprep(directory,'\\','\\\\');
 	title(dir_in_title)
 	ylim([0 1])
@@ -126,5 +127,5 @@ agreement_stats.global = global_agreement;
 agreement_stats.kappa  = kappa;
 
 if write_agree_file
-	write_agreement_file(files,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,training_start_time,training_end_time,trials,agreement_stats.kappa,agreement_stats.global)
+	write_agreement_file(files,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,training_start_time,training_end_time,trials,agreement_stats)
 end

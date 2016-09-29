@@ -53,8 +53,7 @@ if nargin==5
 end
 
 
-	addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\';  %where importdatafile.m XL.m and create_TimeStampMatrix_from_textdata.m live
-	
+	%addpath '\\FS1\WisorData\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils';  %where importdatafile.m XL.m and create_TimeStampMatrix_from_textdata.m live
 
 % -- First import the .txt file
 % data has columns: lactate, EEG1_0.5-1Hz, EEG1_1-2Hz etc.
@@ -93,20 +92,35 @@ end
      if isempty(textdata{i,2})==1        % label unscored epochs with an 8
      	unscored_epochs=unscored_epochs+1;
      	SleepState(i)=8;                 
-     elseif textdata{i,2}=='W'           % 0=Wake,1=SWS,2=REM, 5=artefact,
+     elseif strcmp(strtrim(textdata{i,2}),'U')           % 0=Wake,1=SWS,2=REM, 5=artefact, U= unscored
+     	unscored_epochs=unscored_epochs+1;
+     	SleepState(i)=8;
+     elseif strcmp(strtrim(textdata{i,2}),'W')           % 0=Wake,1=SWS,2=REM, 5=artefact,
      	SleepState(i)=0;
-     elseif textdata{i,2}=='S' | textdata{i,2}=='NR'
+	 elseif textdata{i,2}=='S' 
      	SleepState(i)=1;
-     elseif textdata{i,2}=='P'
+     elseif strcmp(strtrim(textdata{i,2}),'NR')
+     	SleepState(i)=1;
+     elseif strcmp(strtrim(textdata{i,2}),'N')
+     	SleepState(i)=1;
+     elseif strcmp(strtrim(textdata{i,2}),'P')
      	SleepState(i)=2;
-     elseif textdata{i,2}=='R'
+     elseif strcmp(strtrim(textdata{i,2}),'R')
      	SleepState(i)=2;
-     elseif sum(textdata{i,2}=='Tr')==2
+     elseif strcmp(strtrim(textdata{i,2}),'Tr')
         SleepState(i)=0;                  % call transitions wake
-     elseif textdata{i,2}=='X'            % artefact
+     elseif strcmp(strtrim(textdata{i,2}),'W-X')
+        SleepState(i)=5; 
+     elseif strcmp(strtrim(textdata{i,2}),'N-X')
+        SleepState(i)=5; 
+     elseif strcmp(strtrim(textdata{i,2}),'R-X')
+        SleepState(i)=5; 
+     elseif strcmp(strtrim(textdata{i,2}),'Art')
+        SleepState(i)=5; 
+     elseif textdata{i,2}=='X' | textdata{i,2}=='M'           % artefact
      	SleepState(i)=5; 
      else   
-     	error('I found a sleep state that wasn''t W,S,P,R,Tr, or X');
+     	error('I found a sleep state that wasn''t W,S,NR,N,P,R,Tr,X, or M');
      end
     end
 	disp(['There were ',num2str(unscored_epochs), ' epochs, (' num2str(unscored_epochs/(length(SleepState))*100) '% of the total dataset), that were not scored.'])
@@ -121,8 +135,8 @@ end
 % TESTING:
 % Check individual epochs for Feature and PCA to see why they are getting scored incorrectly.
 %time_of_interest = 
-location_of_interest = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==48 & [TimeStampMatrix(:).Second]==0);
-location_of_interest = location_of_interest(1);   % I only want the first instance of this time.
+% location_of_interest = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==48 & [TimeStampMatrix(:).Second]==0);
+% location_of_interest = location_of_interest(1);   % I only want the first instance of this time.
 
 
 
@@ -234,10 +248,10 @@ if normalize
 	explained
 end
 
-disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
-disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
-disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
-pause
+% disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
+% disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
+% disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
+% pause
 
 
 
@@ -279,7 +293,7 @@ if trials.number > 1
 	for i=2:trials.number+1
 		scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); % replace set to false means I won't get a row repeated
 		tstart = tic;
-		num_REMS_episodes_desired = 10;
+		num_REMS_episodes_desired = 5;
 		while length(find(SleepState(scored_rows{i})==2))<num_REMS_episodes_desired
  			scored_rows{i} = datasample(original_scored_rows,round(trials.fraction_training_data*length(original_scored_rows)),'Replace',false); 
 	 		time_spent_sampling =toc(tstart);

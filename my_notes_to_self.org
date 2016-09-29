@@ -176,3 +176,7 @@ I met with Janne and almost everything looks great.  Try the same version of the
 
 * Friday, Oct. 30, 2015
 I ran the autoscoring on the next 3 files Janne sent me.  It did pretty well on them, but REM was sometimes not great.  Then I ran it using 10 trials of 50% of training data and that really improved the agreement.  
+
+* Friday, Dec. 11, 2015
+I'm working on updating the autoscoring to use an .edf and a .txt file instead of our custom .txt output from NeuroScore.  I have some code (using pwelch.m) and computing max(EMG)-min(EMG) over each epoch gives me numbers that are consistently off of the .txt numbers by a factor of 1.613253.  I have no idea why.  I suppose they get normalized anyway, but it would be nice to know why they are off by this factor.  Could it be amplified??? by a factor of 1.6? 
+

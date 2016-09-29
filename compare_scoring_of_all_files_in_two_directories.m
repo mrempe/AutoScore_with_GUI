@@ -34,6 +34,8 @@ if length(files1) ~= length(files2)
 end
 
 for i=1:length(files1)
+	files1(i).name
+	files2(i).name
 	[data1,textdata1]=importdatafile([dir1 '\' files1(i).name]);
  	[data2,textdata2]=importdatafile([dir2 '\' files2(i).name]);
 	

@@ -16,14 +16,38 @@ if iscell(human_scored_state_vector) & iscell(computer_scored_state_vector)
 	 	end
 	 end
 
+  	% convert all 'NR' scores to 'S'.  This is important because cell2mat will make a longer vector if 'NR' is used instead of 'S'
+	human_scored_state_vector    = strrep(human_scored_state_vector,'NR','S');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'NR','S');
+
+	human_scored_state_vector = strrep(human_scored_state_vector,'W-X','X');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'W-X','X');
+
+	human_scored_state_vector = strrep(human_scored_state_vector,'N-X','X');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'N-X','X');
+
+	human_scored_state_vector = strrep(human_scored_state_vector,'S-X','X');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'S-X','X');
+
+	human_scored_state_vector = strrep(human_scored_state_vector,'R-X','X');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'R-X','X');
+
+	human_scored_state_vector = strrep(human_scored_state_vector,'U','W');
+	computer_scored_state_vector = strrep(computer_scored_state_vector,'U','W');
+
+	% remove white space in strings
+	human_scored_state_vector = strtrim(human_scored_state_vector);
+	computer_scored_state_vector = strtrim(computer_scored_state_vector);
+
 
 	vh = cell2mat(human_scored_state_vector);
 	vc = cell2mat(computer_scored_state_vector);
 	
+
 	global_agreement = sum(vh==vc)/length(vh);
 	wake_percent_agreement = (length(find(vh=='W' & vc=='W')))/length(find(vh=='W'));
-	SWS_percent_agreement = (length(find(vh=='S' & vc=='S')))/length(find(vh=='S'));
-	REM_percent_agreement = (length(find((vh=='R' | vh=='P') & (vc=='R' | vc=='P'))))/length(find(vh=='R' | vh=='P'));
+	SWS_percent_agreement  = (length(find(vh=='S' & vc=='S')))/length(find(vh=='S'));
+	REM_percent_agreement  = (length(find((vh=='R' | vh=='P') & (vc=='R' | vc=='P'))))/length(find(vh=='R' | vh=='P'));
 
 else
   % this is the case where the two input vectors consist entirely of numbers (this was what was here originally)
