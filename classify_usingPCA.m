@@ -53,7 +53,7 @@ if nargin==5
 end
 
 
-	addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\';  %where importdatafile.m XL.m and create_TimeStampMatrix_from_textdata.m live
+	%addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\';  %where importdatafile.m XL.m and create_TimeStampMatrix_from_textdata.m live
 	
 
 % -- First import the .txt file
@@ -234,10 +234,10 @@ if normalize
 	explained
 end
 
-disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
-disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
-disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
-pause
+% disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
+% disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
+% disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
+% pause
 
 
 
