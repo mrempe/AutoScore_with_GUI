@@ -3,7 +3,7 @@ function write_agreement_file(txtfiles,directory,method,signal,restrict,writefil
 %
 %
 %
-addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\'
+%addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\'
 
 
 
