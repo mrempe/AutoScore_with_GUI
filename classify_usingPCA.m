@@ -220,8 +220,13 @@ explained
 if normalize
 	column_maxs  = max(Feature,[],1);
 	column_mins  = min(Feature,[],1);
-	column_means = mean(Feature,1,'omitnan');
-	column_SDs   = std(Feature,0,1,'omitnan');
+	if verLessThan('matlab','2015')
+		column_means = nanmean(Feature,1);
+		column_SDs = nanstd(Feature,0,1);
+	else 
+		column_means = mean(Feature,1,'omitnan');
+		column_SDs   = std(Feature,0,1,'omitnan');
+	end 
 	for i=1:7
 		%Feature_Scaled(:,i) = (Feature(:,i)-column_mins(i))./(column_maxs(i)-column_mins(i));
 		Feature_Scaled(:,i) = (Feature(:,i)-column_means(i))./column_SDs(i);
@@ -447,7 +452,7 @@ overall_score = 0.7*kappa +0.3*global_agreement;
 [~,ranking] = sort(overall_score);
 [best_overall_score,best_trial] = max(overall_score);
 %disp(['Trial ' num2str(best_trial) ' is the best'])
-ranking = flip(ranking);  % If you want to see a ranking of the trials based on agreement stats, remove semicolon from this line
+ranking = fliplr(ranking);  % If you want to see a ranking of the trials based on agreement stats, remove semicolon from this line
 kappa = kappa(best_trial);
 global_agreement = global_agreement(best_trial);
 wake_agreement = wake_agreement(best_trial);
@@ -537,7 +542,7 @@ set(REM_scatter_human,'FaceColor',[1,0.5,0]);
 %scatterhist(PCAvectors(:,1),PCAvectors(:,2),'Group',SleepState,'Color','rbk')
 xlabel('PC1')
 ylabel('PC2')
-a = find(filename=='\');
+a = find(filename=='\' | filename=='/');
 title(['Human-scored data for file ', filename(a(end)+1:end)])
 legend('Wake','SWS','REMS')
 legend boxoff

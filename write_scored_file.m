@@ -14,7 +14,7 @@ function write_scored_file(filename,directory,predicted_score)
 
 % First copy the original file so we don't mess it up
  a = find(filename=='.');
- d = find(filename=='\');
+ d = find(filename=='\' | filename=='/');
  newfilename = strcat(directory,'\',filename(d(end)+1:a(end)-1), 'AUTOSCORED', filename(a(end):end));
  copyfile(filename,newfilename,'f');
 
@@ -22,7 +22,7 @@ function write_scored_file(filename,directory,predicted_score)
 
 % This is so I can use Jon's stuff 
 %addpath ../../../../../../Brennecke/matlab-pipeline/Matlab/etc/matlab-utils/;
-addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\'
+%addpath 'C:\Users\wisorlab\Documents\MATLAB\Brennecke\matlab-pipeline\Matlab\etc\matlab-utils\'
 %xl=XL('D:\mrempe\BL-118140Copy.txt');
 
 xl=XL(newfilename);
