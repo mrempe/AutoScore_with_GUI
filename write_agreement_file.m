@@ -1,4 +1,4 @@
-function write_agreement_file(txtfiles,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,training_start_time,training_end_time,trials,kappa,global_agreement)
+function write_agreement_file(txtfiles,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,training_start_time,training_end_time,trials,agreement)
 % USAGE: write_agreement_file(txtfiles,directory,method,signal,restrict,writefile,use_all_as_training,repeated_trials,kappa,global_agreement)
 %
 %
@@ -35,11 +35,17 @@ sheet_params = xl.addSheets({'Calling Parameters'});
 %txt_file_names = dir(strcat(directory,'*.txt'));
 %xl.setCells(sheet_agree{1},[1,2],{txt_file_names.name}','false','true');
 xl.setCells(sheet_agree{1},[1,2],txtfiles','false','true');
-xl.setCells(sheet_agree{1},[2,2],kappa');
-xl.setCells(sheet_agree{1},[3,2],global_agreement');
+xl.setCells(sheet_agree{1},[2,2],agreement.kappa');
+xl.setCells(sheet_agree{1},[3,2],agreement.global');
+xl.setCells(sheet_agree{1},[4,2],agreement.wake');
+xl.setCells(sheet_agree{1},[5,2],agreement.SWS');
+xl.setCells(sheet_agree{1},[6,2],agreement.REM');
 xl.setCells(sheet_agree{1},[1,1],{'Files'},'669999');
 xl.setCells(sheet_agree{1},[2,1],{'kappa'},'669999','true');
 xl.setCells(sheet_agree{1},[3,1],{'Global Agreement'},'669999','true');
+xl.setCells(sheet_agree{1},[4,1],{'Wake'},'669999','true');
+xl.setCells(sheet_agree{1},[5,1],{'SWS'},'669999','true');
+xl.setCells(sheet_agree{1},[6,1],{'REM'},'669999','true');
 
 xl.setCells(sheet_params{1},[1,2],{'Method'});
 xl.setCells(sheet_params{1},[1,3],{'Signal'});
