@@ -1,4 +1,4 @@
-function [predicted_score,dynamic_range,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile,output_directory)
+function [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile,output_directory)
 	% Usage: [predicted_score,kappa,global_agreement,wake_agreement,SWS_agreement,REM_agreement]=classify_usingPCA(filename,method,signal,restrict,training_start,training_end,trials,writefile)
 	%
 	%
@@ -58,15 +58,31 @@ end
 
 % -- First import the .txt file
 % data has columns: lactate, EEG1_0.5-1Hz, EEG1_1-2Hz etc.
-[data,textdata]=importdatafile(filename);
+[epochs,state_cell,textdata]=generate_freq_bands_from_edf(filename);
+
+% check length of epochs and textdata and trim off entries from textdata if one too many was generated  
+if length(textdata) > length(epochs)
+	textdata = textdata(1:length(epochs),:);
+end 
+
+
 TimeStampMatrix = create_TimeStampMatrix_from_textdata(textdata);
-	
+
+
+
 % Compute the length of an epoch
 f=find(textdata{1,1}==':');   % Find all locations of the colon in the first time stamp
 first_colon_loc = f(1);   
 last_colon_loc = f(2);
-hour_first_time_stamp    = str2num(textdata{1,1}(first_colon_loc-2))*10+str2num(textdata{1,1}(first_colon_loc-1));  
-hour_second_time_stamp   = str2num(textdata{2,1}(first_colon_loc-2))*10+str2num(textdata{2,1}(first_colon_loc-1));  
+if isspace(textdata{1,1}(first_colon_loc-2)) % if only one digit in hour
+	hour_first_time_stamp    = str2num(textdata{1,1}(first_colon_loc-1));  
+	hour_second_time_stamp   = str2num(textdata{2,1}(first_colon_loc-1));  
+else 
+	hour_first_time_stamp    = str2num(textdata{1,1}(first_colon_loc-2))*10+str2num(textdata{1,1}(first_colon_loc-1));  
+	hour_second_time_stamp   = str2num(textdata{2,1}(first_colon_loc-2))*10+str2num(textdata{2,1}(first_colon_loc-1));  
+end 
+
+
 minute_first_time_stamp  = str2num(textdata{1,1}(first_colon_loc+1))*10+str2num(textdata{1,1}(first_colon_loc+2));
 minute_second_time_stamp = str2num(textdata{2,1}(first_colon_loc+1))*10+str2num(textdata{2,1}(first_colon_loc+2));
 second_first_time_stamp  = str2num(textdata{1,1}(last_colon_loc+1))*10+str2num(textdata{1,1}(last_colon_loc+2));
@@ -86,21 +102,30 @@ end
 
 
     % Set up the sleep state as a variable
-	SleepState=zeros(size(data,1),1);
+	SleepState=zeros(length(epochs),1);
 	%unscored_epochs=0;
 
 
 
 	unique_sleep_states = unique(textdata(:,2))
 	
+if sum(cellfun('isempty',unique_sleep_states))~=0
+	offset=1;
+else
+	offset=0;
+end 
+size(unique_sleep_states)
+size(SleepState)
+size(textdata)
+size(epochs)
 
 	for i=1:length(unique_sleep_states)
-		if isempty(unique_sleep_states{i})
-			SleepState(find(strcmp(textdata(:,2),unique_sleep_states{i})))=8;
+		if isempty(unique_sleep_states{i}) | strcmp(unique_sleep_states{i},'Z')
+			SleepState(find(strcmp(textdata(1:length(epochs),2),unique_sleep_states{i})))=8;
 		elseif strcmp(unique_sleep_states{i},'X')
-			SleepState(find(strcmp(textdata(:,2),unique_sleep_states{i})))=-1;  %artefacts
+			SleepState(find(strcmp(textdata(1:length(epochs),2),unique_sleep_states{i})))=-1;  %artefacts
 		else
-			SleepState(find(strcmp(textdata(:,2),unique_sleep_states{i})))=i-1;
+			SleepState(find(strcmp(textdata(1:length(epochs),2),unique_sleep_states{i})))=i-offset;
 		end
 	end
 
@@ -108,14 +133,19 @@ end
 
 
 
-number_value_for_wake = find(strcmp(unique_sleep_states,'W'))-1;  %numeric code in predicted_sleep_state corresponding to 'W'
-number_value_for_REMS = find(strcmp(unique_sleep_states,'R'))-1; 
-number_value_for_SWS  = find(strcmp(unique_sleep_states,'S'))-1;
+if isempty(unique_sleep_states{1}) 
+	has_unscored = 1;
+else 
+	has_unscored = 0;
+end
+number_value_for_wake = find(strcmp(unique_sleep_states,'W'))-has_unscored;  %numeric code in predicted_sleep_state corresponding to 'W'
+number_value_for_REMS = find(strcmp(unique_sleep_states,'R'))-has_unscored; 
+number_value_for_SWS  = find(strcmp(unique_sleep_states,'S'))-has_unscored;
 if isempty(number_value_for_SWS) 
-	number_value_for_SWS = find(strcmp(unique_sleep_states,'NR'))-1;
+	number_value_for_SWS = find(strcmp(unique_sleep_states,'NR'))-has_unscored;
 end
 if isempty(number_value_for_REMS)
-	number_value_for_REMS = find(strcmp(unique_sleep_states,'P'))-1;
+	number_value_for_REMS = find(strcmp(unique_sleep_states,'P'))-has_unscored;
 end 
 
 	% for i = 1:size(data,1)  
@@ -150,8 +180,8 @@ end
 % TESTING:
 % Check individual epochs for Feature and PCA to see why they are getting scored incorrectly.
 %time_of_interest = 
-location_of_interest = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==48 & [TimeStampMatrix(:).Second]==0);
-location_of_interest = location_of_interest(1);   % I only want the first instance of this time.
+% location_of_interest = find([TimeStampMatrix(:).Hour]==10 & [TimeStampMatrix(:).Minute]==48 & [TimeStampMatrix(:).Second]==0);
+% location_of_interest = location_of_interest(1);   % I only want the first instance of this time.
 
 
 
@@ -170,18 +200,25 @@ location_of_interest = location_of_interest(1);   % I only want the first instan
 	%		Beta/delta is the ratio of beta to delta (here beta is defined as 15-30Hz)
 
 
-[delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,signal);
+% [delta_columns,theta_columns,low_beta_columns,high_beta_columns,beta_columns,EMG_column]=find_freq_band_columns(filename,signal);
 
 
-	   Feature(:,1) = sum(data(:,delta_columns),2);	%delta
-	   Feature(:,2) = sum(data(:,theta_columns),2);	%theta
-	   Feature(:,3) = sum(data(:,low_beta_columns),2);	%low beta
-	   Feature(:,4) = sum(data(:,high_beta_columns),2);	%high beta 
-	   Feature(:,5) = data(:,EMG_column);				%EMG
-	   Feature(:,6) = Feature(:,2)./Feature(:,1);
-	   Feature(:,7) = sum(data(:,beta_columns),2)./Feature(:,1);
+% 	   Feature(:,1) = sum(data(:,delta_columns),2);	%delta
+% 	   Feature(:,2) = sum(data(:,theta_columns),2);	%theta
+% 	   Feature(:,3) = sum(data(:,low_beta_columns),2);	%low beta
+% 	   Feature(:,4) = sum(data(:,high_beta_columns),2);	%high beta 
+% 	   Feature(:,5) = data(:,EMG_column);				%EMG
+% 	   Feature(:,6) = Feature(:,2)./Feature(:,1);
+% 	   Feature(:,7) = sum(data(:,beta_columns),2)./Feature(:,1);
 	
 
+Feature(:,1) = [epochs.delta];
+Feature(:,2) = [epochs.theta];
+Feature(:,3) = [epochs.lowBeta];
+Feature(:,4) = [epochs.highBeta];
+Feature(:,5) = [epochs.EMG];
+Feature(:,6) = Feature(:,2)./Feature(:,1);
+Feature(:,7) = ([epochs.beta])'./Feature(:,1);
 
 if sum(sum(isnan(Feature))) ~=0
 	disp('WARNING: Feature vector contains NaNs.  Missing EEG or EMG data.  Ignoring these epochs.')
@@ -198,28 +235,32 @@ Nan_rows = unique(rows);
 SleepState(Nan_rows)=-1;  % Designate epochs with missing data as artefact 
 
 % Also handle the case where all the EEG values are artificially set to 1.  This is clearly an artefact even if it wasn't scored as such
-for i=1:length(data)
-	if data(i,1) ==1 & data(i,2)==1 & data(i,3)==1 & data(i,4)==1 & data(i,5)==1
-		SleepState(i)=-1;
-	end
-end
+% FLAG for if using .txt file as input, not .edf
+% for i=1:length(data)
+% 	if data(i,1) ==1 & data(i,2)==1 & data(i,3)==1 & data(i,4)==1 & data(i,5)==1
+% 		SleepState(i)=-1;
+% 	end
+% end
 
 
-
-% Are there epochs marked as artefacts (either scored as artefact or missing EEG or EMG data)?   
-  if length(find(SleepState(:)==-1)) > 0
-    disp(['I found ', num2str(length(find(SleepState(:)==-1))) ' epochs marked as artefact'])
-    %SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
-  end 
-  non_artefact_indices = find(SleepState(:)~=-1);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
+% FLAG for if using .edf file as input, not .txt
+%non_artefact_indices = 1:length(SleepState);
 
 
-% Set at least one Feature to NaN if an epoch is marked as artefact. This ensures that pca.m will ignore it.
+ % Are there epochs marked as artefacts (either scored as artefact or missing EEG or EMG data)?   
+   if length(find(SleepState(:)==-1)) > 0
+     disp(['I found ', num2str(length(find(SleepState(:)==-1))) ' epochs marked as artefact'])
+     %SleepState = handle_artefacts(SleepState);     % After this step there are no more epochs scored as 5
+   end 
+   non_artefact_indices = find(SleepState(:)~=-1);  % indices of epochs that are not marked as artefact. Run autoscoring only on these indices. 
+
+
+% % Set at least one Feature to NaN if an epoch is marked as artefact. This ensures that pca.m will ignore it.
 Feature(find(SleepState(:)==-1),1)=NaN;
 
 
-% compute dynamic range
-dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
+% % compute dynamic range
+% dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_indices,7));
 
 
 
@@ -239,6 +280,8 @@ dynamic_range = max(Feature(non_artefact_indices,7))-min(Feature(non_artefact_in
  % figure
  % imagesc(V)
  % pause
+
+
 
 
 % Compute the Principal Components
@@ -268,10 +311,7 @@ if normalize
 	explained
 end
 
-% disp(['first point PCA: ',num2str(PCAvectors(location_of_interest,1:2))])
-% disp(['second point PCA: ', num2str(PCAvectors(location_of_interest+1,1:2))])
-% disp(['third point PCA: ', num2str(PCAvectors(location_of_interest+2,1:2))])
-% pause
+
 
 
 
@@ -400,7 +440,7 @@ for j=1:M
 	err 
  	predicted_sleep_state(find(SleepState==-1),j)=-1; % reset artifacts epochs back to artifact
  end  
-	
+	disp(['length of predicted_score right after call to classify is:' num2str(length(predicted_sleep_state))])
 
 
  if strcmp(method,'RandomForest')
@@ -683,15 +723,21 @@ end
 
 predicted_score = predicted_sleep_state;
 
+
+disp(['length of predicted_score just before call to write_scored_file:' num2str(length(predicted_score))])
 % export a new excel file where the column of sleep state has been overwritten with the computer-scored
 % sleep states
 if writefile
+	
+	dot_loc = find(filename=='.');
+ 	
+ 	txt_filename = strcat(filename(1:dot_loc(end)), 'txt');
 	% first make a directory based on the time stamp
 	% a=find(filename=='\');
 	% date_time = datestr(now,'mm.dd.yyyy.hh.MM');
 	% output_directory = strcat(filename(1:a(end)),'Autoscore_output_',date_time);
 	% mkdir(output_directory)
-	write_scored_file(filename,output_directory,predicted_score,unique_sleep_states); % previous version
+	write_scored_file(txt_filename,output_directory,predicted_score,unique_sleep_states,textdata); 
 	%write_scored_file_fast(filename,output_directory,predicted_score);  %new version, without needing to click on any windows
 end
 
